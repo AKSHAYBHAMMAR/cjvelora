@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #F8F6F2;
+    --color-gold: #D4AF37;
+    --color-charcoal: #1A1C1B;
+    --color-navy: #00061F;
+    --color-olive: #6B705C;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--color-bg);
+    color: var(--color-charcoal);
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: #F8F6F2;
+    color: #1A1C1B;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F8F6F2;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D4AF37;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C5A059;
+  }
+
+  ::selection {
+    background-color: #D4AF37;
+    color: #FFFFFF;
+  }
+}
+
+/* Tactile Glassmorphism Styles */
+.glass-panel {
+  background: rgba(250, 248, 245, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px rgba(0, 6, 31, 0.04);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 6, 31, 0.04);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  will-change: transform;
+}
+
+.glass-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: 0 20px 45px rgba(212, 175, 55, 0.14);
+}
+
+/* Stitched Seam Divider */
+.stitched-divider {
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(107, 112, 92, 0.3) 50%, transparent 50%);
+  background-size: 10px 1px;
+  background-repeat: repeat-x;
+}
+
+/* Custom Yarn Ball Cursor */
+.cursor-yarn {
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 35% 35%, #F7E7CE, #D4AF37);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate3d(-50%, -50%, 0);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+  will-change: transform;
+  transition: transform 0.08s ease-out;
+}
+
+/* Scroll Progress Bar */
+#scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #D4AF37, #6B705C, #D4AF37);
+  z-index: 10000;
+  width: 0%;
+  transition: width 0.1s linear;
+}

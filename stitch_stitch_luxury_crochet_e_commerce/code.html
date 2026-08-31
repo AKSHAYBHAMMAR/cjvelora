@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CJ's Velora | Luxury Handmade Crochet Brand</title>
+    <meta name="description" content="CJ's Velora - High-end luxury handmade crochet brand. Handcrafted elegance, bespoke accessories, luxury home decor, and custom artisan creations."/>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,aspect-ratio"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        ivory: "#F8F6F2",
+                        "warm-white": "#FAF8F5",
+                        beige: "#EFECE6",
+                        "soft-gold": "#D4AF37",
+                        "gold-hover": "#C5A059",
+                        champagne: "#F7E7CE",
+                        "olive-accent": "#6B705C",
+                        "olive-dark": "#4A503D",
+                        charcoal: "#1A1C1B",
+                        navy: "#00061F",
+                        "navy-light": "#081D4A",
+                        glass: "rgba(255, 255, 255, 0.75)",
+                        "glass-border": "rgba(255, 255, 255, 0.9)",
+                        stroke: "rgba(212, 175, 55, 0.2)"
+                    },
+                    fontFamily: {
+                        serif: ["Playfair Display", "Cormorant Garamond", "serif"],
+                        garamond: ["Cormorant Garamond", "serif"],
+                        sans: ["Inter", "sans-serif"],
+                        tech: ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "4xl": "2rem"
+                    },
+                    boxShadow: {
+                        luxury: "0 20px 40px -15px rgba(0, 6, 31, 0.07)",
+                        "luxury-hover": "0 25px 50px -12px rgba(212, 175, 55, 0.15)"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --color-bg: #F8F6F2;
+            --color-gold: #D4AF37;
+            --color-charcoal: #1A1C1B;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            background-color: var(--color-bg);
+            color: var(--color-charcoal);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Custom Yarn Ball Cursor */
+        .cursor-yarn {
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle at 35% 35%, #F7E7CE, #D4AF37);
+            border: 1px solid rgba(212, 175, 55, 0.6);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate3d(-50%, -50%, 0);
+            transition: transform 0.1s ease-out;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+            will-change: transform;
+        }
+
+        /* Scroll Progress Bar */
+        #scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #D4AF37, #6B705C, #D4AF37);
+            z-index: 10000;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(250, 248, 245, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 0 8px 30px rgba(0, 6, 31, 0.04);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 24px rgba(0, 6, 31, 0.04);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+            will-change: transform;
+        }
+
+        .glass-card:hover {
+            transform: translate3d(0, -6px, 0);
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 18px 40px rgba(212, 175, 55, 0.12);
+        }
+
+        .stitched-divider {
+            height: 1px;
+            background-image: linear-gradient(to right, rgba(107, 112, 92, 0.25) 50%, transparent 50%);
+            background-size: 10px 1px;
+            background-repeat: repeat-x;
+        }
+
+        /* Reveal animations */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translate3d(0, 30px, 0);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            will-change: opacity, transform;
+        }
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+
+        /* Hide scrollbars gracefully */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F8F6F2;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body class="bg-ivory text-charcoal font-sans antialiased selection:bg-soft-gold selection:text-white">
+
+    <!-- Scroll Progress Indicator -->
+    <div id="scroll-progress"></div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-yarn" id="custom-cursor"></div>
+
+    <!-- Navbar -->
+    <header class="fixed top-0 left-0 w-full z-50 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 md:px-12 py-5 flex items-center justify-between transition-all duration-300" id="navbar-container">
+            <!-- Left Navigation Links -->
+            <nav class="hidden lg:flex items-center gap-8 font-sans text-xs uppercase tracking-widest font-medium text-charcoal/80">
+                <a href="#hero" class="hover:text-soft-gold transition-colors">Home</a>
+                <a href="#collections" class="hover:text-soft-gold transition-colors">Crochet Collections</a>
+                <a href="#featured" class="hover:text-soft-gold transition-colors">Masterpieces</a>
+                <a href="#about" class="hover:text-soft-gold transition-colors">Story</a>
+            </nav>
+
+            <!-- Brand Logo Center -->
+            <a href="#hero" class="flex flex-col items-center group">
+                <span class="font-serif text-2xl md:text-3xl font-bold tracking-tight text-charcoal group-hover:text-soft-gold transition-colors duration-300">CJ's Velora</span>
+                <span class="font-tech text-[9px] uppercase tracking-[0.35em] text-olive-accent -mt-1">Luxury Crochet</span>
+            </a>
+
+            <!-- Right Actions -->
+            <div class="flex items-center gap-6">
+                <nav class="hidden lg:flex items-center gap-8 font-sans text-xs uppercase tracking-widest font-medium text-charcoal/80">
+                    <a href="#process" class="hover:text-soft-gold transition-colors">Craft Process</a>
+                    <a href="#testimonials" class="hover:text-soft-gold transition-colors">Reviews</a>
+                    <a href="#contact" class="hover:text-soft-gold transition-colors">Contact</a>
+                </nav>
+
+                <div class="flex items-center gap-3">
+                    <button id="search-btn" aria-label="Search" class="p-2 rounded-full text-charcoal hover:text-soft-gold hover:bg-white/50 transition-all">
+                        <span class="material-symbols-outlined text-xl">search</span>
+                    </button>
+                    <button id="wishlist-btn" aria-label="Wishlist" class="p-2 rounded-full text-charcoal hover:text-soft-gold hover:bg-white/50 transition-all relative">
+                        <span class="material-symbols-outlined text-xl">favorite</span>
+                        <span class="absolute top-1 right-1 w-4 h-4 bg-soft-gold text-white text-[9px] font-tech rounded-full flex items-center justify-center" id="wishlist-count">0</span>
+                    </button>
+                    <button id="cart-btn" aria-label="Shopping Cart" class="p-2 rounded-full text-charcoal hover:text-soft-gold hover:bg-white/50 transition-all relative">
+                        <span class="material-symbols-outlined text-xl">shopping_bag</span>
+                        <span class="absolute top-1 right-1 w-4 h-4 bg-navy text-ivory text-[9px] font-tech rounded-full flex items-center justify-center" id="cart-count">2</span>
+                    </button>
+
+                    <!-- Mobile Menu Button -->
+                    <button id="mobile-menu-btn" aria-label="Toggle Menu" class="lg:hidden p-2 text-charcoal hover:text-soft-gold">
+                        <span class="material-symbols-outlined text-2xl">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 z-40 bg-ivory/95 backdrop-blur-2xl flex flex-col justify-center items-center gap-8 opacity-0 pointer-events-none transition-all duration-300">
+        <button id="close-mobile-menu" class="absolute top-6 right-6 p-3 text-charcoal hover:text-soft-gold">
+            <span class="material-symbols-outlined text-3xl">close</span>
+        </button>
+        <a href="#hero" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Home</a>
+        <a href="#collections" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Crochet Collections</a>
+        <a href="#featured" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Featured Masterpieces</a>
+        <a href="#about" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Our Story</a>
+        <a href="#process" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Craft Process</a>
+        <a href="#testimonials" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Reviews</a>
+        <a href="#contact" class="mobile-nav-link font-serif text-3xl text-charcoal hover:text-soft-gold">Contact Us</a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main>
+        <!-- HERO SECTION (Plays Uploaded Local Video) -->
+        <section id="hero" class="relative w-full min-h-screen flex items-center pt-24 pb-12 overflow-hidden">
+            <div class="flex flex-col lg:flex-row items-center justify-between w-full px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto gap-8">
+                
+                <!-- Left Side: Typography & Story CTAs (~40%) -->
+                <div class="w-full lg:w-5/12 flex flex-col justify-center z-10 space-y-6 pt-8 lg:pt-0">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border border-soft-gold/30 self-start">
+                        <span class="w-2 h-2 rounded-full bg-soft-gold animate-pulse"></span>
+                        <span class="font-tech text-[10px] uppercase tracking-[0.25em] text-olive-dark font-medium">Bespoke Artisan Luxury</span>
+                    </div>
+
+                    <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.15] text-charcoal">
+                        Handcrafted Elegance,<br/>
+                        <span class="italic font-normal text-olive-accent">Stitched With Love.</span>
+                    </h1>
+
+                    <p class="font-sans text-base lg:text-lg text-charcoal/75 font-light leading-relaxed max-w-lg">
+                        Step into the serene universe of <strong class="font-medium text-charcoal">CJ's Velora</strong>. Each creation is meticulously crocheted by hand using organic cotton yarn, turning intricate loops into tactile works of art.
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-4 pt-2">
+                        <a href="#collections" class="bg-navy text-ivory font-sans text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-luxury flex items-center gap-3 group">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </a>
+
+                        <a href="#about" class="glass-panel text-charcoal border border-charcoal/20 font-sans text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-white hover:border-soft-gold transition-all duration-300">
+                            Our Story
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Side: Plays User's Uploaded Video File -->
+                <div class="w-full lg:w-7/12 h-[50vh] sm:h-[65vh] lg:h-[75vh] relative flex items-center justify-center">
+                    <div class="w-full h-full glass-card rounded-3xl overflow-hidden relative shadow-2xl border border-white/90">
+                        <video autoplay muted loop playsinline preload="auto" class="w-full h-full object-cover rounded-3xl">
+                            <source src="../Logo_reveal_animation_with_crochet_202608061015.mp4" type="video/mp4"/>
+                            <source src="Logo_reveal_animation_with_crochet_202608061015.mp4" type="video/mp4"/>
+                        </video>
+
+                        <!-- Floating Atelier Badge -->
+                        <div class="absolute bottom-6 right-6 glass-panel px-5 py-3 rounded-2xl border border-white/70 flex items-center gap-4 shadow-lg">
+                            <div class="w-10 h-10 rounded-full bg-soft-gold/20 flex items-center justify-center text-soft-gold">
+                                <span class="material-symbols-outlined">auto_awesome</span>
+                            </div>
+                            <div>
+                                <span class="font-tech text-[10px] uppercase tracking-widest text-olive-accent block">Handcrafted Excellence</span>
+                                <span class="font-serif text-sm text-charcoal font-medium">100% Pure Organic Crochet</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="max-w-7xl mx-auto px-6 md:px-12 my-4">
+            <div class="stitched-divider"></div>
+        </div>
+
+        <!-- OUR CROCHET COLLECTIONS SECTION (100% AUTHENTIC CROCHET IMAGERY) -->
+        <section id="collections" class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+            <div class="text-center max-w-3xl mx-auto mb-16 space-y-4 reveal-on-scroll">
+                <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">Handmade Catalog</span>
+                <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Our Crochet Collections</h2>
+                <p class="font-garamond italic text-xl text-olive-accent">Every handcrafted creation is thoughtfully designed to bring warmth, elegance, and timeless beauty into everyday living.</p>
+            </div>
+
+            <!-- Grid of Authentic Crochet Collection Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                
+                <!-- Collection 1: Crochet Bags -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/handbags.png" alt="Crochet Bags" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../handbags.png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Crochet Bags</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Handmade luxury open-weave cotton tote bags, granny square carryalls, and bohemian shoulder bags.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 2: Crochet Kitchens -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/crochet_kitchen_essentials.png" alt="Crochet Kitchens" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../crochet_kitchen_essentials.png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Crochet Kitchens</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Hand-knitted waffle dishcloths, thick cotton trivet pads, and heat-resistant artisan pot holders.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 3: Crochet Cushion Covers -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/cusion covers.png" alt="Crochet Cushion Covers" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../cusion covers.png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Crochet Cushion Covers</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Intricately textured waffle-stitch and medallion lace decorative pillow covers for elegant living.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 4: Crochet Toys -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/toys.png" alt="Crochet Toys" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../toys.png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Crochet Toys</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Hypoallergenic organic cotton amigurumi companions and collectible heirloom dolls.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 5: Crochet Shawls -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/shawl.png" alt="Crochet Shawls" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" onerror="this.src='../shawl.png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Crochet Shawls</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Delicate open-mesh triangle lace shawls with scalloped edges for elegant, cozy layering.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 6: Table Mats -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/crochet_table_mats.png" alt="Table Mats" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../crochet_table_mats.png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Table Mats</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Lacy floral crochet dining placemats and long table runners woven with fine thread.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 7: Dream Catchers -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll">
+                    <div class="h-56 relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/dream catcher .png" alt="Dream Catchers" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../dream catcher .png'"/>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-serif text-xl font-semibold text-charcoal mb-2">Dream Catchers</h3>
+                            <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Spiritual yarn web dreamcatchers embellished with wooden beads and artisanal crochet fringe.</p>
+                        </div>
+                        <a href="#featured" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors">
+                            <span>Explore Collection</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collection 8: Custom Crochet -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border-2 border-dashed border-soft-gold/40">
+                    <div class="h-56 relative overflow-hidden bg-navy">
+                        <img src="../assets/images/gift collection.jpg" alt="Custom Crochet" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" onerror="this.src='../gift collection.jpg'"/>
+                        <div class="absolute inset-0 bg-gradient-to-t from-navy via-transparent to-transparent"></div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow justify-between bg-navy text-ivory">
+                        <div>
+                            <span class="font-tech text-[10px] uppercase tracking-widest text-soft-gold block mb-1">Bespoke Commission</span>
+                            <h3 class="font-serif text-xl font-semibold mb-2">Custom Crochet</h3>
+                            <p class="font-sans text-xs text-ivory/70 leading-relaxed">Tailored crochet pieces made to your custom dimensions, colors, and initial embroidery.</p>
+                        </div>
+                        <a href="#contact" class="mt-4 inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-soft-gold hover:text-white transition-colors">
+                            <span>Request Custom Commission</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FEATURED PRODUCTS SECTION (FEATURED CROCHET MASTERPIECES) -->
+        <section id="featured" class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/60 rounded-3xl">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 reveal-on-scroll">
+                <div>
+                    <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block mb-2">100% Handcrafted</span>
+                    <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Featured Crochet Masterpieces</h2>
+                </div>
+                <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group">
+                    <span>View All Collections</span>
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </a>
+            </div>
+
+            <!-- Masterpiece Cards Grid (5 Requested Categories + Dream Catchers) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="supabase-products-grid">
+                
+                <!-- 1. Crochet Kitchens -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border border-white/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300">
+                    <div class="h-64 sm:h-72 w-full relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/crochet_kitchen_essentials.png" alt="Crochet Kitchens" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../crochet_kitchen_essentials.png'"/>
+                    </div>
+                    <div class="p-6 sm:p-7 flex flex-col flex-grow justify-between bg-white/40 backdrop-blur-sm">
+                        <div>
+                            <span class="font-tech text-[10px] text-olive-accent uppercase tracking-[0.2em] font-medium block mb-2">Kitchen Essentials</span>
+                            <h3 class="font-serif text-2xl font-semibold text-charcoal mb-2 group-hover:text-olive-accent transition-colors">Crochet Kitchens</h3>
+                            <p class="font-sans text-xs sm:text-[13px] text-charcoal/70 leading-relaxed">Hand-knitted waffle dishcloths, thick cotton trivet pads, and heat-resistant artisan pot holders.</p>
+                        </div>
+                        <div class="mt-6 pt-5 border-t border-charcoal/10 flex items-center justify-between">
+                            <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group/link">
+                                <span>Explore Collection</span>
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Crochet Bags -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border border-white/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300">
+                    <div class="h-64 sm:h-72 w-full relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/handbags.png" alt="Crochet Bags" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../handbags.png'"/>
+                    </div>
+                    <div class="p-6 sm:p-7 flex flex-col flex-grow justify-between bg-white/40 backdrop-blur-sm">
+                        <div>
+                            <span class="font-tech text-[10px] text-olive-accent uppercase tracking-[0.2em] font-medium block mb-2">Artisan Carryalls</span>
+                            <h3 class="font-serif text-2xl font-semibold text-charcoal mb-2 group-hover:text-olive-accent transition-colors">Crochet Bags</h3>
+                            <p class="font-sans text-xs sm:text-[13px] text-charcoal/70 leading-relaxed">Handcrafted open-weave cotton tote bags, bohemian granny square shoulder bags, and bespoke carryalls.</p>
+                        </div>
+                        <div class="mt-6 pt-5 border-t border-charcoal/10 flex items-center justify-between">
+                            <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group/link">
+                                <span>Explore Collection</span>
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Crochet Cushion Covers -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border border-white/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300">
+                    <div class="h-64 sm:h-72 w-full relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/cusion covers.png" alt="Crochet Cushion Covers" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../cusion covers.png'"/>
+                    </div>
+                    <div class="p-6 sm:p-7 flex flex-col flex-grow justify-between bg-white/40 backdrop-blur-sm">
+                        <div>
+                            <span class="font-tech text-[10px] text-olive-accent uppercase tracking-[0.2em] font-medium block mb-2">Luxury Living</span>
+                            <h3 class="font-serif text-2xl font-semibold text-charcoal mb-2 group-hover:text-olive-accent transition-colors">Crochet Cushion Covers</h3>
+                            <p class="font-sans text-xs sm:text-[13px] text-charcoal/70 leading-relaxed">Intricately patterned medallion lace and waffle-stitch textured decorative pillow covers.</p>
+                        </div>
+                        <div class="mt-6 pt-5 border-t border-charcoal/10 flex items-center justify-between">
+                            <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group/link">
+                                <span>Explore Collection</span>
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Crochet Toys -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border border-white/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300">
+                    <div class="h-64 sm:h-72 w-full relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/toys.png" alt="Crochet Toys" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../toys.png'"/>
+                    </div>
+                    <div class="p-6 sm:p-7 flex flex-col flex-grow justify-between bg-white/40 backdrop-blur-sm">
+                        <div>
+                            <span class="font-tech text-[10px] text-olive-accent uppercase tracking-[0.2em] font-medium block mb-2">Amigurumi Atelier</span>
+                            <h3 class="font-serif text-2xl font-semibold text-charcoal mb-2 group-hover:text-olive-accent transition-colors">Crochet Toys</h3>
+                            <p class="font-sans text-xs sm:text-[13px] text-charcoal/70 leading-relaxed">Hypoallergenic organic cotton amigurumi companions and collectible heirloom crochet plushies.</p>
+                        </div>
+                        <div class="mt-6 pt-5 border-t border-charcoal/10 flex items-center justify-between">
+                            <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group/link">
+                                <span>Explore Collection</span>
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Crochet Shawls -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border border-white/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300">
+                    <div class="h-64 sm:h-72 w-full relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/shawl.png" alt="Crochet Shawls" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" onerror="this.src='../shawl.png'"/>
+                    </div>
+                    <div class="p-6 sm:p-7 flex flex-col flex-grow justify-between bg-white/40 backdrop-blur-sm">
+                        <div>
+                            <span class="font-tech text-[10px] text-olive-accent uppercase tracking-[0.2em] font-medium block mb-2">Hand-Stitched Wraps</span>
+                            <h3 class="font-serif text-2xl font-semibold text-charcoal mb-2 group-hover:text-olive-accent transition-colors">Crochet Shawls</h3>
+                            <p class="font-sans text-xs sm:text-[13px] text-charcoal/70 leading-relaxed">Delicate open-mesh triangle lace shawls with scalloped edges for elegant, airy layering.</p>
+                        </div>
+                        <div class="mt-6 pt-5 border-t border-charcoal/10 flex items-center justify-between">
+                            <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group/link">
+                                <span>Explore Collection</span>
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Dream Catchers -->
+                <div class="glass-card rounded-3xl overflow-hidden group flex flex-col h-full reveal-on-scroll border border-white/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300">
+                    <div class="h-64 sm:h-72 w-full relative overflow-hidden bg-beige/60">
+                        <img src="../assets/images/dream catcher .png" alt="Dream Catchers" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.src='../dream catcher .png'"/>
+                    </div>
+                    <div class="p-6 sm:p-7 flex flex-col flex-grow justify-between bg-white/40 backdrop-blur-sm">
+                        <div>
+                            <span class="font-tech text-[10px] text-olive-accent uppercase tracking-[0.2em] font-medium block mb-2">Spiritual Decor</span>
+                            <h3 class="font-serif text-2xl font-semibold text-charcoal mb-2 group-hover:text-olive-accent transition-colors">Dream Catchers</h3>
+                            <p class="font-sans text-xs sm:text-[13px] text-charcoal/70 leading-relaxed">Spiritual yarn web dreamcatchers embellished with wooden beads and artisanal flowing tassels.</p>
+                        </div>
+                        <div class="mt-6 pt-5 border-t border-charcoal/10 flex items-center justify-between">
+                            <a href="#collections" class="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors group/link">
+                                <span>Explore Collection</span>
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION (Story + Bento Layout) -->
+        <section id="about" class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto relative overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                <!-- Left Story Column (5 cols) -->
+                <div class="lg:col-span-5 space-y-6 reveal-on-scroll">
+                    <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">The Atelier Journey</span>
+                    <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal leading-tight">
+                        The Story Behind<br/>
+                        <span class="italic text-olive-accent font-normal">CJ's Velora</span>
+                    </h2>
+                    <p class="font-sans text-base text-charcoal/75 leading-relaxed font-light">
+                        Founded on the belief that handmade goods possess a soul that machine production can never replicate, <strong class="font-medium text-charcoal">CJ's Velora</strong> bridges traditional crochet heritage with modern luxury aesthetics.
+                    </p>
+                    <p class="font-sans text-base text-charcoal/75 leading-relaxed font-light">
+                        From hand-selecting 100% natural organic cotton yarn to spending over 12 hours perfecting a single tapestry, our artisan workshop infuses warmth, elegance, and intentionality into every stitch.
+                    </p>
+
+                    <div class="grid grid-cols-3 gap-4 pt-4 border-t border-charcoal/10">
+                        <div>
+                            <span class="font-serif text-3xl font-bold text-navy block">100%</span>
+                            <span class="font-tech text-[10px] uppercase text-olive-accent tracking-wider">Handmade</span>
+                        </div>
+                        <div>
+                            <span class="font-serif text-3xl font-bold text-navy block">12+</span>
+                            <span class="font-tech text-[10px] uppercase text-olive-accent tracking-wider">Hours / Piece</span>
+                        </div>
+                        <div>
+                            <span class="font-serif text-3xl font-bold text-navy block">Zero</span>
+                            <span class="font-tech text-[10px] uppercase text-olive-accent tracking-wider">Plastic Waste</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Bento Showcase (7 cols) -->
+                <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 reveal-on-scroll">
+                    <div class="glass-card rounded-3xl p-3 h-80 sm:h-96">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxG2DiurkAn28G-6KrU-bXBq8X-cEIfAab7GfRPcVQK2m5qPsAXX5j0jijBDLxxvFy4CZt3xZaXQlz1bbbC5WYzuzZy9kbCLpi3uCw7j6_AOKj-pXFGHgM3i5GnBgqK58hIb3PX9LaS0W01zwZfdVH73hG93UeATCIMNy9idAiru7tIsmj6lgvClJ-knbrR1UpMg1s6qPYnOws8H0Jr8VL_DgutP7R5IxYiLSdEC3qzoJdPd-RCrOb" alt="Crochet Artisan Hands" class="w-full h-full object-cover rounded-2xl"/>
+                    </div>
+                    <div class="flex flex-col gap-6">
+                        <div class="glass-card rounded-3xl p-8 bg-navy text-ivory flex flex-col justify-center">
+                            <span class="font-tech text-[10px] uppercase tracking-widest text-soft-gold mb-2">Heritage Guarantee</span>
+                            <h3 class="font-serif text-2xl font-semibold mb-2">Crafted to Last</h3>
+                            <p class="font-sans text-xs text-ivory/70 leading-relaxed">Each piece is reinforced with double-loop locking knots and washed with organic botanical scents before dispatch.</p>
+                        </div>
+                        <div class="glass-card rounded-3xl p-3 h-48">
+                            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD10VXcj41GQfC6u4W0pkCZA-gonBOvH3XJ-TsF_oN277XZpHY1Sbbd422R5KyPrIh3MghhU06Tu9eAzoH-S0UZJS3St4yT7Uxexgda64ajOScvg54NcOH7lf032d4gFGXp9gZkWuMT1JmSe4EiyTcPJ21Hg4hSmuDYsnsp_BlM9MbjO4DiTBHVI24GA0Y2VXUKiiCPVkT73e8ADZ7n2uNMDDlsMq9gsQH6KPD0bzWWr4TEuKfyCxhr" alt="Detailed Texture" class="w-full h-full object-cover rounded-2xl"/>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- WHY CHOOSE US (Luxury Icon Cards) -->
+        <section class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+            <div class="text-center max-w-2xl mx-auto mb-16 space-y-3 reveal-on-scroll">
+                <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">Uncompromising Quality</span>
+                <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Why Choose CJ's Velora</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                <!-- Card 1 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white">
+                    <div class="w-14 h-14 rounded-2xl bg-soft-gold/15 flex items-center justify-center text-soft-gold">
+                        <span class="material-symbols-outlined text-3xl">pan_tool</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">100% Handmade</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">No automated machines or mass factories. Every knot is made by master artisans.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white">
+                    <div class="w-14 h-14 rounded-2xl bg-olive-accent/15 flex items-center justify-center text-olive-accent">
+                        <span class="material-symbols-outlined text-3xl">eco</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">Premium Cotton Yarn</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Hypoallergenic, ultra-soft natural cotton threads dyed with non-toxic botanical colors.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white">
+                    <div class="w-14 h-14 rounded-2xl bg-soft-gold/15 flex items-center justify-center text-soft-gold">
+                        <span class="material-symbols-outlined text-3xl">favorite</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">Made With Love</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Carefully finished with hand-embroidered brand signatures and protective blessings.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white">
+                    <div class="w-14 h-14 rounded-2xl bg-olive-accent/15 flex items-center justify-center text-olive-accent">
+                        <span class="material-symbols-outlined text-3xl">recycling</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">Eco Friendly</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Sustainable practices, biodegradable threads, and zero single-use plastic packaging.</p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white">
+                    <div class="w-14 h-14 rounded-2xl bg-soft-gold/15 flex items-center justify-center text-soft-gold">
+                        <span class="material-symbols-outlined text-3xl">design_services</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">Custom Orders</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Tailored colors, custom dimensions, and personalized initials woven upon request.</p>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white">
+                    <div class="w-14 h-14 rounded-2xl bg-olive-accent/15 flex items-center justify-center text-olive-accent">
+                        <span class="material-symbols-outlined text-3xl">card_giftcard</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">Gift Ready Packaging</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Arrives wrapped in luxury linen ribbon, dried lavender sprig, and personalized card.</p>
+                </div>
+
+                <!-- Card 7 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col space-y-4 reveal-on-scroll border border-white lg:col-span-2">
+                    <div class="w-14 h-14 rounded-2xl bg-navy/10 flex items-center justify-center text-navy">
+                        <span class="material-symbols-outlined text-3xl">public</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold text-charcoal">Worldwide Express Shipping</h3>
+                    <p class="font-sans text-xs text-charcoal/70 leading-relaxed">Tracked air shipping in protective organic cotton dustbags directly to your doorstep globally.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PROCESS TIMELINE SECTION -->
+        <section id="process" class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/70 rounded-3xl my-12">
+            <div class="text-center max-w-3xl mx-auto mb-20 space-y-3 reveal-on-scroll">
+                <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">Step-by-step Artistry</span>
+                <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Our Crafting Process</h2>
+                <p class="font-garamond italic text-xl text-olive-accent">From raw thread selection to your doorstep</p>
+            </div>
+
+            <!-- Horizontal Step Timeline -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 relative">
+                
+                <!-- Step 1 -->
+                <div class="process-step glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 reveal-on-scroll">
+                    <span class="font-tech text-xs text-soft-gold uppercase tracking-widest">Step 01</span>
+                    <div class="w-12 h-12 rounded-full bg-navy text-ivory flex items-center justify-center font-serif text-lg font-bold">1</div>
+                    <h3 class="font-serif text-lg font-semibold text-charcoal">Choose Design</h3>
+                    <p class="font-sans text-xs text-charcoal/60">Select from our catalog or share bespoke custom specifications.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="process-step glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 reveal-on-scroll">
+                    <span class="font-tech text-xs text-soft-gold uppercase tracking-widest">Step 02</span>
+                    <div class="w-12 h-12 rounded-full bg-navy text-ivory flex items-center justify-center font-serif text-lg font-bold">2</div>
+                    <h3 class="font-serif text-lg font-semibold text-charcoal">Hand Crochet</h3>
+                    <p class="font-sans text-xs text-charcoal/60">Artisans spend 8–15 hours looping premium cotton thread into shape.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="process-step glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 reveal-on-scroll">
+                    <span class="font-tech text-xs text-soft-gold uppercase tracking-widest">Step 03</span>
+                    <div class="w-12 h-12 rounded-full bg-navy text-ivory flex items-center justify-center font-serif text-lg font-bold">3</div>
+                    <h3 class="font-serif text-lg font-semibold text-charcoal">Quality Check</h3>
+                    <p class="font-sans text-xs text-charcoal/60">Strict stitch count verification, seam tension & knot strength audit.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="process-step glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 reveal-on-scroll">
+                    <span class="font-tech text-xs text-soft-gold uppercase tracking-widest">Step 04</span>
+                    <div class="w-12 h-12 rounded-full bg-navy text-ivory flex items-center justify-center font-serif text-lg font-bold">4</div>
+                    <h3 class="font-serif text-lg font-semibold text-charcoal">Premium Packaging</h3>
+                    <p class="font-sans text-xs text-charcoal/60">Wrapped in branded tissue, dried floral accent & personalized card.</p>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="process-step glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 reveal-on-scroll">
+                    <span class="font-tech text-xs text-soft-gold uppercase tracking-widest">Step 05</span>
+                    <div class="w-12 h-12 rounded-full bg-soft-gold text-navy flex items-center justify-center font-serif text-lg font-bold">5</div>
+                    <h3 class="font-serif text-lg font-semibold text-charcoal">Delivered to You</h3>
+                    <p class="font-sans text-xs text-charcoal/60">Dispatched via express air delivery with real-time tracking.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TESTIMONIALS SECTION -->
+        <section id="testimonials" class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+            <div class="text-center max-w-2xl mx-auto mb-16 space-y-3 reveal-on-scroll">
+                <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">Client Expressions</span>
+                <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Loved Across the Globe</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Review 1 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between space-y-6 reveal-on-scroll">
+                    <div class="space-y-4">
+                        <div class="flex text-soft-gold text-sm">★★★★★</div>
+                        <p class="font-serif text-base italic text-charcoal/80 leading-relaxed">
+                            "I purchased the crochet tote bag from CJ's Velora and I am completely in awe. The craftsmanship is extraordinary — every loop is so precise and the organic cotton feels incredibly soft against the skin. It has become my most-complimented accessory in Mumbai."
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-4 pt-4 border-t border-charcoal/10">
+                        <div class="w-10 h-10 rounded-full bg-soft-gold/20 flex items-center justify-center font-serif font-bold text-navy">SS</div>
+                        <div>
+                            <h4 class="font-serif text-sm font-semibold text-charcoal">SHREYA SHARMA</h4>
+                            <span class="font-tech text-[10px] uppercase text-olive-accent">VERIFIED BUYER • MUMBAI, MAHARASHTRA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review 2 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between space-y-6 reveal-on-scroll">
+                    <div class="space-y-4">
+                        <div class="flex text-soft-gold text-sm">★★★★★</div>
+                        <p class="font-serif text-base italic text-charcoal/80 leading-relaxed">
+                            "Ordered a set of custom crochet table mats for our Diwali dinner and they were simply breathtaking. Our guests could not believe these were handmade. The attention to detail, the elegant lacework, and the luxurious packaging made it feel like a true atelier experience."
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-4 pt-4 border-t border-charcoal/10">
+                        <div class="w-10 h-10 rounded-full bg-olive-accent/20 flex items-center justify-center font-serif font-bold text-olive-dark">AB</div>
+                        <div>
+                            <h4 class="font-serif text-sm font-semibold text-charcoal">AKSHAY BHAMMAR</h4>
+                            <span class="font-tech text-[10px] uppercase text-olive-accent">VERIFIED BUYER • ANDHERI, MUMBAI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review 3 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between space-y-6 reveal-on-scroll">
+                    <div class="space-y-4">
+                        <div class="flex text-soft-gold text-sm">★★★★★</div>
+                        <p class="font-serif text-base italic text-charcoal/80 leading-relaxed">
+                            "The crochet flower bouquet I gifted my mother on her birthday was met with pure delight. Handcrafted with such refined artistry and packed in the most elegant linen box — CJ's Velora has redefined what a truly premium handmade gift feels like in India."
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-4 pt-4 border-t border-charcoal/10">
+                        <div class="w-10 h-10 rounded-full bg-navy/20 flex items-center justify-center font-serif font-bold text-navy">VC</div>
+                        <div>
+                            <h4 class="font-serif text-sm font-semibold text-charcoal">VIKAS CHOUDHARY</h4>
+                            <span class="font-tech text-[10px] uppercase text-olive-accent">VERIFIED BUYER • BANDRA, MUMBAI</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FAQ SECTION -->
+        <section class="py-24 px-6 md:px-12 lg:px-20 max-w-4xl mx-auto">
+            <div class="text-center mb-16 space-y-3 reveal-on-scroll">
+                <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">Common Inquiries</span>
+                <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Frequently Asked Questions</h2>
+            </div>
+
+            <div class="space-y-4">
+                
+                <!-- Q1 -->
+                <div class="glass-card rounded-2xl p-6 overflow-hidden reveal-on-scroll">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-serif text-lg font-semibold text-charcoal hover:text-soft-gold transition-colors">
+                        <span>How long does a custom crochet commission take?</span>
+                        <span class="material-symbols-outlined text-soft-gold transform transition-transform duration-300">expand_more</span>
+                    </button>
+                    <div class="faq-answer hidden pt-4 font-sans text-xs text-charcoal/70 leading-relaxed border-t border-charcoal/10 mt-4">
+                        Custom commissions take approximately 5 to 10 business days depending on design complexity. Once ready, express shipping takes 3-5 days worldwide.
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="glass-card rounded-2xl p-6 overflow-hidden reveal-on-scroll">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-serif text-lg font-semibold text-charcoal hover:text-soft-gold transition-colors">
+                        <span>How should I wash and care for my handmade crochet pieces?</span>
+                        <span class="material-symbols-outlined text-soft-gold transform transition-transform duration-300">expand_more</span>
+                    </button>
+                    <div class="faq-answer hidden pt-4 font-sans text-xs text-charcoal/70 leading-relaxed border-t border-charcoal/10 mt-4">
+                        We recommend gentle hand washing in lukewarm water with mild detergent. Lay flat on a clean towel to dry. Avoid wringing or machine tumbling to preserve yarn elasticity.
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="glass-card rounded-2xl p-6 overflow-hidden reveal-on-scroll">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-serif text-lg font-semibold text-charcoal hover:text-soft-gold transition-colors">
+                        <span>Are your yarns organic and eco-friendly?</span>
+                        <span class="material-symbols-outlined text-soft-gold transform transition-transform duration-300">expand_more</span>
+                    </button>
+                    <div class="faq-answer hidden pt-4 font-sans text-xs text-charcoal/70 leading-relaxed border-t border-charcoal/10 mt-4">
+                        Yes! 100% of our yarn supply is OEKO-TEX certified organic cotton and natural bamboo fibers. We use zero acrylic plastic threads.
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="glass-card rounded-2xl p-6 overflow-hidden reveal-on-scroll">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-serif text-lg font-semibold text-charcoal hover:text-soft-gold transition-colors">
+                        <span>Do you offer luxury gift wrapping?</span>
+                        <span class="material-symbols-outlined text-soft-gold transform transition-transform duration-300">expand_more</span>
+                    </button>
+                    <div class="faq-answer hidden pt-4 font-sans text-xs text-charcoal/70 leading-relaxed border-t border-charcoal/10 mt-4">
+                        All orders come default in our signature presentation box with satin ribbon and dried botanical sprigs, ready to present to loved ones.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- CONTACT SECTION -->
+        <section id="contact" class="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                <!-- Left Info (5 cols) -->
+                <div class="lg:col-span-5 space-y-6 reveal-on-scroll">
+                    <span class="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block">Get In Touch</span>
+                    <h2 class="font-serif text-3xl md:text-5xl font-semibold text-charcoal">Connect With CJ's Velora</h2>
+                    <p class="font-sans text-base text-charcoal/75 leading-relaxed font-light">
+                        Have questions about a bespoke custom order or wholesale inquiries? Send us a message and our artisan team will respond within 24 hours.
+                    </p>
+
+                    <div class="space-y-4 pt-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-soft-gold/20 flex items-center justify-center text-soft-gold">
+                                <span class="material-symbols-outlined text-xl">mail</span>
+                            </div>
+                            <div>
+                                <span class="font-tech text-[10px] uppercase text-olive-accent">Email Atelier</span>
+                                <a href="mailto:cjsvelora01@gmail.com" class="font-sans text-sm font-medium text-charcoal hover:text-soft-gold transition-colors block">cjsvelora01@gmail.com</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Form (7 cols) -->
+                <div class="lg:col-span-7 glass-card p-8 md:p-12 rounded-3xl border border-white reveal-on-scroll">
+                    <form id="contact-form" class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label class="font-tech text-[10px] uppercase tracking-wider text-olive-accent block mb-2">Your Name</label>
+                                <input type="text" required placeholder="Lady Eleanor" class="w-full bg-white/70 border border-charcoal/15 rounded-xl px-4 py-3 font-sans text-sm text-charcoal focus:outline-none focus:border-soft-gold focus:ring-1 focus:ring-soft-gold transition-all"/>
+                            </div>
+                            <div>
+                                <label class="font-tech text-[10px] uppercase tracking-wider text-olive-accent block mb-2">Email Address</label>
+                                <input type="email" required placeholder="eleanor@domain.com" class="w-full bg-white/70 border border-charcoal/15 rounded-xl px-4 py-3 font-sans text-sm text-charcoal focus:outline-none focus:border-soft-gold focus:ring-1 focus:ring-soft-gold transition-all"/>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="font-tech text-[10px] uppercase tracking-wider text-olive-accent block mb-2">Inquiry Type</label>
+                            <select class="w-full bg-white/70 border border-charcoal/15 rounded-xl px-4 py-3 font-sans text-sm text-charcoal focus:outline-none focus:border-soft-gold focus:ring-1 focus:ring-soft-gold transition-all">
+                                <option>Custom Order Commission</option>
+                                <option>General Product Question</option>
+                                <option>Wholesale & Boutique Partnership</option>
+                                <option>Press & Media</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-tech text-[10px] uppercase tracking-wider text-olive-accent block mb-2">Your Message</label>
+                            <textarea rows="4" required placeholder="Describe your vision or question..." class="w-full bg-white/70 border border-charcoal/15 rounded-xl px-4 py-3 font-sans text-sm text-charcoal focus:outline-none focus:border-soft-gold focus:ring-1 focus:ring-soft-gold transition-all"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-md">
+                            Send Message to Atelier
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full bg-charcoal text-ivory pt-20 pb-12 border-t border-soft-gold/20">
+        <div class="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 grid grid-cols-1 md:grid-cols-12 gap-12 pb-16 border-b border-ivory/10">
+            
+            <!-- Brand Column -->
+            <div class="md:col-span-5 space-y-4">
+                <span class="font-serif text-3xl font-bold text-ivory tracking-tight block">CJ's Velora</span>
+                <p class="font-garamond italic text-base text-ivory/70 max-w-sm">
+                    Luxury handmade crochet brand bridging traditional artisan techniques with soft modern aesthetics.
+                </p>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="md:col-span-3 space-y-4">
+                <h4 class="font-tech text-xs uppercase tracking-widest text-soft-gold">Navigation</h4>
+                <ul class="space-y-2 font-sans text-xs text-ivory/70">
+                    <li><a href="#hero" class="hover:text-soft-gold transition-colors">Home</a></li>
+                    <li><a href="#collections" class="hover:text-soft-gold transition-colors">Crochet Collections</a></li>
+                    <li><a href="#featured" class="hover:text-soft-gold transition-colors">Featured Masterpieces</a></li>
+                    <li><a href="#about" class="hover:text-soft-gold transition-colors">Atelier Story</a></li>
+                    <li><a href="#contact" class="hover:text-soft-gold transition-colors">Contact Concierge</a></li>
+                </ul>
+            </div>
+
+            <!-- Newsletter -->
+            <div class="md:col-span-4 space-y-4">
+                <h4 class="font-tech text-xs uppercase tracking-widest text-soft-gold">Atelier Journal</h4>
+                <p class="font-sans text-xs text-ivory/70">Subscribe to receive private previews of new seasonal crochet collections.</p>
+                <form id="newsletter-form" class="flex gap-2">
+                    <input type="email" required placeholder="Enter your email" class="bg-white/10 border border-ivory/20 rounded-xl px-4 py-2.5 font-sans text-xs text-ivory placeholder-ivory/40 focus:outline-none focus:border-soft-gold flex-grow"/>
+                    <button type="submit" class="bg-soft-gold text-navy font-sans text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-white transition-colors">
+                        Join
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <div class="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 pt-8 flex flex-col sm:flex-row items-center justify-between font-tech text-[10px] text-ivory/50 uppercase tracking-widest gap-4">
+            <p>© 2026 CJ's Velora. All Rights Reserved. Crafted with passion.</p>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-ivory">Privacy Policy</a>
+                <a href="#" class="hover:text-ivory">Terms of Service</a>
+                <a href="#" class="hover:text-ivory">Shipping & Care</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SLIDE-OUT CART DRAWER -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+        <div id="cart-bg" class="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"></div>
+        <div id="cart-panel" class="absolute top-0 right-0 w-full max-w-md h-full bg-ivory shadow-2xl p-8 flex flex-col justify-between transform translate-x-full transition-transform duration-300">
+            <div>
+                <div class="flex items-center justify-between pb-6 border-b border-charcoal/10">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-navy">shopping_bag</span>
+                        <h3 class="font-serif text-xl font-semibold text-charcoal">Your Atelier Bag</h3>
+                    </div>
+                    <button id="close-cart-btn" class="p-2 text-charcoal hover:text-soft-gold">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div class="py-6 space-y-6" id="cart-items-container">
+                    <!-- Cart Item 1 -->
+                    <div class="flex gap-4 items-center">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlJ8otswwPKq0hevmdqjK7Wxa5mSn8p0cYL7IbRoSolta3dw7tQq7e9OFmxGog_4TlJ8lCExwX5N4TDvrjCPs-EWqTk3TpPcMbUh0xOcELSV-0WSB8gmd95A7nDJamhlTae17oOYazq4zVLABrSE6LuBVpJRfHJx9MAclz4aVASJvwFJt-MBADI6R5D61cmbTnc_J4jELN3IQ59aPRkwK19ZIAWGZAQZiOE1aS3KBB_XK5X161MKGa" class="w-16 h-16 object-cover rounded-xl"/>
+                        <div class="flex-grow">
+                            <h4 class="font-serif text-sm font-semibold text-charcoal">Crochet Evil Eye Keychain</h4>
+                            <span class="font-tech text-xs text-navy font-semibold">₹999</span>
+                        </div>
+                        <div class="flex items-center gap-2 border border-charcoal/20 rounded-lg px-2 py-1">
+                            <button class="text-xs text-charcoal font-bold">-</button>
+                            <span class="text-xs font-tech">1</span>
+                            <button class="text-xs text-charcoal font-bold">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Cart Item 2 -->
+                    <div class="flex gap-4 items-center">
+                        <img src="../assets/images/crochet_tote_bag.png" class="w-16 h-16 object-cover rounded-xl"/>
+                        <div class="flex-grow">
+                            <h4 class="font-serif text-sm font-semibold text-charcoal">Handmade Crochet Tote Bag</h4>
+                            <span class="font-tech text-xs text-navy font-semibold">₹3,499</span>
+                        </div>
+                        <div class="flex items-center gap-2 border border-charcoal/20 rounded-lg px-2 py-1">
+                            <button class="text-xs text-charcoal font-bold">-</button>
+                            <span class="text-xs font-tech">1</span>
+                            <button class="text-xs text-charcoal font-bold">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-charcoal/10 space-y-4">
+                <div class="flex justify-between items-center font-serif text-lg font-semibold text-charcoal">
+                    <span>Subtotal</span>
+                    <span class="font-tech text-navy" id="cart-subtotal">₹4,498</span>
+                </div>
+                <p class="font-sans text-[10px] text-charcoal/60 text-center">Taxes and worldwide express shipping calculated at checkout.</p>
+                <button class="w-full bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-soft-gold hover:text-navy transition-all shadow-md">
+                    Proceed to Luxury Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK VIEW MODAL -->
+    <div id="quick-view-modal" class="fixed inset-0 z-50 pointer-events-none opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div id="modal-bg" class="absolute inset-0 bg-charcoal/60 backdrop-blur-md"></div>
+        <div class="relative glass-card max-w-2xl w-full p-8 rounded-3xl border border-white z-10 space-y-6">
+            <button id="close-modal-btn" class="absolute top-6 right-6 p-2 text-charcoal hover:text-soft-gold">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                <img id="modal-img" src="../assets/images/crochet_tote_bag.png" class="w-full h-72 object-cover rounded-2xl"/>
+                <div class="space-y-4">
+                    <span class="font-tech text-[10px] uppercase text-olive-accent tracking-widest">Handcrafted Artifact</span>
+                    <h3 id="modal-title" class="font-serif text-2xl font-bold text-charcoal">Handmade Crochet Tote Bag</h3>
+                    <p id="modal-desc" class="font-sans text-xs text-charcoal/70 leading-relaxed">Cream-colored luxury open-weave cotton tote bag crafted with heavy gauge yarn handles.</p>
+                    <span id="modal-price" class="font-tech text-xl font-bold text-navy block">₹3,499</span>
+                    <button class="w-full bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-3 rounded-xl hover:bg-soft-gold hover:text-navy transition-all">
+                        Add to Atelier Bag
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTWEIGHT JAVASCRIPT LOGIC (60 FPS INSTANT SCROLL PERFORMANCE) -->
+    <script>
+        // 1. Lightweight Scroll Progress & Navbar Shift
+        const navbar = document.getElementById('navbar');
+        const navbarContainer = document.getElementById('navbar-container');
+        const scrollProgress = document.getElementById('scroll-progress');
+
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            if (scrollProgress) scrollProgress.style.width = scrolled + "%";
+
+            if (window.scrollY > 40) {
+                navbar.classList.add('glass-panel', 'shadow-md');
+                navbarContainer.classList.remove('py-5');
+                navbarContainer.classList.add('py-3');
+            } else {
+                navbar.classList.remove('glass-panel', 'shadow-md');
+                navbarContainer.classList.remove('py-3');
+                navbarContainer.classList.add('py-5');
+            }
+        }, { passive: true });
+
+        // 2. Hardware Accelerated Cursor Movement
+        const cursor = document.getElementById('custom-cursor');
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }, { passive: true });
+
+        function renderCursor() {
+            cursorX += (mouseX - cursorX) * 0.25;
+            cursorY += (mouseY - cursorY) * 0.25;
+            if (cursor) {
+                cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%)`;
+            }
+            requestAnimationFrame(renderCursor);
+        }
+        renderCursor();
+
+        // 3. Lightweight Intersection Observer for Scroll Reveals
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.1 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+
+        // 4. Interactive Cart Drawer & Quick View Modal
+        const cartDrawer = document.getElementById('cart-drawer');
+        const cartBg = document.getElementById('cart-bg');
+        const cartPanel = document.getElementById('cart-panel');
+        const cartBtn = document.getElementById('cart-btn');
+        const closeCartBtn = document.getElementById('close-cart-btn');
+
+        function openCart() {
+            cartDrawer.classList.remove('pointer-events-none', 'opacity-0');
+            cartPanel.classList.remove('translate-x-full');
+        }
+
+        function closeCart() {
+            cartDrawer.classList.add('pointer-events-none', 'opacity-0');
+            cartPanel.classList.add('translate-x-full');
+        }
+
+        if (cartBtn) cartBtn.addEventListener('click', openCart);
+        if (closeCartBtn) closeCartBtn.addEventListener('click', closeCart);
+        if (cartBg) cartBg.addEventListener('click', closeCart);
+
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const countEl = document.getElementById('cart-count');
+                if (countEl) {
+                    let current = parseInt(countEl.textContent || '0');
+                    countEl.textContent = current + 1;
+                }
+                openCart();
+            });
+        });
+
+        // Quick View Modal
+        const quickViewModal = document.getElementById('quick-view-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalBg = document.getElementById('modal-bg');
+
+        document.querySelectorAll('.quick-view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (quickViewModal) quickViewModal.classList.remove('pointer-events-none', 'opacity-0');
+            });
+        });
+
+        function closeModal() {
+            if (quickViewModal) quickViewModal.classList.add('pointer-events-none', 'opacity-0');
+        }
+
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+        if (modalBg) modalBg.addEventListener('click', closeModal);
+
+        // FAQ Toggle Accordion
+        document.querySelectorAll('.faq-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const answer = btn.nextElementSibling;
+                const icon = btn.querySelector('.material-symbols-outlined');
+                if (answer) answer.classList.toggle('hidden');
+                if (icon) icon.classList.toggle('rotate-180');
+            });
+        });
+
+        // Mobile Menu
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeMobileMenu = document.getElementById('close-mobile-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.remove('opacity-0', 'pointer-events-none');
+            });
+        }
+        if (closeMobileMenu && mobileMenu) {
+            closeMobileMenu.addEventListener('click', () => {
+                mobileMenu.classList.add('opacity-0', 'pointer-events-none');
+            });
+        }
+        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (mobileMenu) mobileMenu.classList.add('opacity-0', 'pointer-events-none');
+            });
+        });
+
+        // Wishlist Feedback
+        document.querySelectorAll('.add-wishlist-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const wishlistCount = document.getElementById('wishlist-count');
+                const icon = btn.querySelector('.material-symbols-outlined');
+                if (icon) icon.classList.add('text-rose-500');
+                if (wishlistCount) {
+                    let cur = parseInt(wishlistCount.textContent || '0');
+                    wishlistCount.textContent = cur + 1;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
