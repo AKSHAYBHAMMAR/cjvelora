@@ -56,10 +56,10 @@ export default function AtelierStory() {
         {/* Right Bento Showcase (7 cols) */}
         <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
           
-          {/* Main Artisan Photo */}
+          {/* Main Artisan Photo (Left / Large) */}
           <div className="glass-card rounded-3xl p-3 h-80 sm:h-96 overflow-hidden">
             <img
-              src="https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?q=80&w=900&auto=format&fit=crop"
+              src="/images/story/story-main.png"
               alt="Crochet Artisan Hands"
               className="w-full h-full object-cover rounded-2xl"
             />
@@ -69,22 +69,22 @@ export default function AtelierStory() {
           <div className="flex flex-col gap-6">
             
             {/* Heritage Guarantee Card */}
-            <div className="glass-card rounded-3xl p-8 bg-navy text-ivory flex flex-col justify-center shadow-xl">
-              <span className="font-tech text-[10px] uppercase tracking-widest text-soft-gold mb-2 font-semibold">
+            <div className="glass-card rounded-3xl p-8 flex flex-col justify-center shadow-xl">
+              <span className="font-tech text-[10px] uppercase tracking-widest text-navy mb-2 font-semibold">
                 Heritage Guarantee
               </span>
-              <h3 className="font-serif text-2xl font-semibold mb-2">
+              <h3 className="font-serif text-2xl font-semibold mb-2 text-charcoal">
                 Crafted to Last
               </h3>
-              <p className="font-sans text-xs text-ivory/70 leading-relaxed">
+              <p className="font-sans text-xs text-charcoal/80 leading-relaxed">
                 Each piece is reinforced with double-loop locking knots and washed with organic botanical scents before dispatch.
               </p>
             </div>
 
-            {/* Detailed Macro Texture */}
+            {/* Detailed Macro Texture (Right / Bottom) */}
             <div className="glass-card rounded-3xl p-3 h-48 overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=900&auto=format&fit=crop"
+                src="/images/story/story-secondary.jpg"
                 alt="Detailed Crochet Yarn Texture"
                 className="w-full h-full object-cover rounded-2xl"
               />

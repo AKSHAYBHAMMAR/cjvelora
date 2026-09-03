@@ -6,12 +6,10 @@ import { ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 
 interface HeroProps {
   videoSrc?: string;
-  posterSrc?: string;
 }
 
 export default function Hero({
   videoSrc = '/videos/velora-hero.mp4',
-  posterSrc = 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1200&auto=format&fit=crop',
 }: HeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -33,14 +31,6 @@ export default function Hero({
         
         {/* Left Column: Brand Message & CTAs (~45%) */}
         <div className="w-full lg:w-5/12 flex flex-col justify-center z-10 space-y-6 pt-4 lg:pt-0">
-          
-          {/* Atelier Hallmark Chip */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-panel border border-soft-gold/40 self-start shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-soft-gold animate-pulse" />
-            <span className="font-tech text-[10px] uppercase tracking-[0.25em] text-olive-dark font-medium">
-              Bespoke Artisan Luxury
-            </span>
-          </div>
 
           {/* Luxury Editorial Headline */}
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.12] text-charcoal tracking-tight">
@@ -112,7 +102,6 @@ export default function Hero({
               loop
               playsInline
               preload="auto"
-              poster={posterSrc}
               className="w-full h-full object-cover rounded-3xl"
             >
               <source src={videoSrc} type="video/mp4" />

@@ -13,7 +13,6 @@ export default function HomePage() {
       {/* 1. Hero Section with Video Canvas (Preserved Exactly) */}
       <Hero
         videoSrc="/videos/velora-hero.mp4"
-        posterSrc="https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1200&auto=format&fit=crop"
       />
 
       {/* Stitched Seam Divider */}
