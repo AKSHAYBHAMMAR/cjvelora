@@ -22,6 +22,18 @@ export interface Product {
   colors?: string[];
   slug?: string;
   categoryId?: string;
+  isPublished?: boolean;
+  uploadedImages?: ProductImageRecord[];
+}
+
+export interface ProductImageRecord {
+  id: string;
+  productId: string;
+  storagePath: string;
+  publicUrl: string;
+  altText: string;
+  displayOrder: number;
+  createdAt?: string;
 }
 
 export interface CategoryItem {
