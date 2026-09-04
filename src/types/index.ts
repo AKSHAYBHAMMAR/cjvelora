@@ -88,3 +88,25 @@ export interface InventoryItem {
   updatedAt?: string;
 }
 
+export interface ProductInventoryView {
+  product: Product;
+  inventory: InventoryItem;
+  availableQuantity: number;
+  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
+}
+
+export interface InventoryAuditLog {
+  id: string;
+  userId?: string;
+  userEmail?: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  productName?: string;
+  oldQuantity?: number;
+  newQuantity?: number;
+  delta?: number;
+  reason?: string;
+  createdAt: string;
+}
+
