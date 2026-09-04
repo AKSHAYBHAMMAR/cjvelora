@@ -11,6 +11,7 @@ interface StoreState {
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  setCart: (cart: CartItem[]) => void;
   getCartTotal: () => number;
   getCartCount: () => number;
 
@@ -32,45 +33,8 @@ interface StoreState {
 }
 
 export const useStore = create<StoreState>((set, get) => ({
-  // Cart
-  cart: [
-    {
-      product: {
-        id: 'p1',
-        name: 'Artisan Crochet Tote Bag',
-        category: 'Crochet Bags',
-        categorySlug: 'bags-totes',
-        price: 3499,
-        description: 'Handmade luxury open-weave cotton tote bag crafted with heavy gauge yarn handles.',
-        materials: '100% Organic OEKO-TEX Cotton Yarn',
-        image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=900&auto=format&fit=crop',
-        images: ['https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=900&auto=format&fit=crop'],
-        rating: 4.9,
-        reviewCount: 48,
-        inStock: true,
-      },
-      quantity: 1,
-      selectedColor: 'Oatmeal Ivory',
-    },
-    {
-      product: {
-        id: 'p2',
-        name: 'Waffle Dishcloth & Trivet Set',
-        category: 'Crochet Kitchens',
-        categorySlug: 'kitchen-essentials',
-        price: 1499,
-        description: 'Hand-knitted waffle dishcloths and thick cotton trivet pads.',
-        materials: 'Natural Unbleached Egyptian Cotton',
-        image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=900&auto=format&fit=crop',
-        images: ['https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=900&auto=format&fit=crop'],
-        rating: 4.8,
-        reviewCount: 32,
-        inStock: true,
-      },
-      quantity: 1,
-      selectedColor: 'Warm Sand',
-    }
-  ],
+  // Cart starts clean and empty, filled by real customer interactions
+  cart: [],
   isCartOpen: false,
   openCart: () => set({ isCartOpen: true }),
   closeCart: () => set({ isCartOpen: false }),
@@ -110,6 +74,7 @@ export const useStore = create<StoreState>((set, get) => ({
     }));
   },
   clearCart: () => set({ cart: [] }),
+  setCart: (cart: CartItem[]) => set({ cart }),
   getCartTotal: () => {
     return get().cart.reduce(
       (acc, item) => acc + item.product.price * item.quantity,

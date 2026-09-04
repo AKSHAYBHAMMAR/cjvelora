@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
 import { useStore } from '@/lib/store';
@@ -141,15 +142,14 @@ export default function CartDrawer() {
             <p className="font-sans text-[10px] text-charcoal/60 text-center">
               Taxes and worldwide express delivery calculated at checkout.
             </p>
-            <button
-              onClick={() => {
-                alert('Phase 1 Visual Demo: Ready for Phase 3 Razorpay Integration!');
-              }}
+            <Link
+              href="/checkout"
+              onClick={closeCart}
               className="w-full bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-md font-semibold flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Proceed to Luxury Checkout</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
         )}
 
