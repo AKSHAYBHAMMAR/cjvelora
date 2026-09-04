@@ -110,3 +110,61 @@ export interface InventoryAuditLog {
   createdAt: string;
 }
 
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'refunded';
+
+export type PaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded';
+
+export interface AdminOrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  productImage?: string;
+  createdAt?: string;
+}
+
+export interface AdminOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: string;
+
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+
+  shippingName?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  shippingState?: string;
+  shippingPostalCode?: string;
+  shippingCountry?: string;
+  shippingPhone?: string;
+
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+
+  items: AdminOrderItem[];
+}
+
