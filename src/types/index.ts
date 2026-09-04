@@ -66,3 +66,13 @@ export interface FAQItem {
   answer: string;
   category?: string;
 }
+
+export interface InventoryItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  reservedQuantity: number;
+  lowStockThreshold: number;
+  updatedAt?: string;
+}
+
