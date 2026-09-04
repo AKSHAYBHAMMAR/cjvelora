@@ -2,10 +2,12 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
 export default function CartDrawer() {
+  const pathname = usePathname();
   const {
     cart,
     isCartOpen,
@@ -17,7 +19,7 @@ export default function CartDrawer() {
 
   const total = getCartTotal();
 
-  if (!isCartOpen) return null;
+  if (pathname?.startsWith('/admin') || !isCartOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">

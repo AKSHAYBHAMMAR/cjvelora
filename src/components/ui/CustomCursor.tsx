@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function CustomCursor() {
+  const pathname = usePathname();
   const [position, setPosition] = useState({ x: -100, y: -100 });
   const [isVisible, setIsVisible] = useState(false);
+
+  if (pathname?.startsWith('/admin')) return null;
 
   useEffect(() => {
     // Only run on devices with fine pointer (mouse/trackpad, not touch)

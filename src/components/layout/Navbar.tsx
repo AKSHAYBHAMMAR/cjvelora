@@ -2,11 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Search, Heart, ShoppingBag, Menu, X, Sparkles } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+
+  // Do not render storefront navbar inside admin console
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
   const {
     openCart,
     getCartCount,

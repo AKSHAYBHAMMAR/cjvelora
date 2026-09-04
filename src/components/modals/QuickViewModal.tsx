@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { X, Heart, ShoppingBag, Sparkles, Check } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
 export default function QuickViewModal() {
+  const pathname = usePathname();
   const {
     quickViewProduct,
     closeQuickView,
@@ -15,7 +17,7 @@ export default function QuickViewModal() {
 
   const [selectedColor, setSelectedColor] = useState<string>('');
 
-  if (!quickViewProduct) return null;
+  if (pathname?.startsWith('/admin') || !quickViewProduct) return null;
 
   const inWish = isInWishlist(quickViewProduct.id);
   const currentColor = selectedColor || quickViewProduct.colors?.[0] || '';

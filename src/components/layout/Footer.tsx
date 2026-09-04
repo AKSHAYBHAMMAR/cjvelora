@@ -2,10 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Send, Sparkles, Check } from 'lucide-react';
 
 export default function Footer() {
+  const pathname = usePathname();
   const [email, setEmail] = useState('');
+
+  // Do not render storefront footer inside admin console
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
   const [subscribed, setSubscribed] = useState(false);
 
   const handleSubscribe = (e: React.FormEvent) => {

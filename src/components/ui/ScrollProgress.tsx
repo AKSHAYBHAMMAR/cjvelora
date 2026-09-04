@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function ScrollProgress() {
+  const pathname = usePathname();
   const [progress, setProgress] = useState(0);
+
+  if (pathname?.startsWith('/admin')) return null;
 
   useEffect(() => {
     const handleScroll = () => {
