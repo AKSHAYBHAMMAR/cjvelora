@@ -20,6 +20,8 @@ export interface Product {
   reviewCount: number;
   inStock: boolean;
   colors?: string[];
+  slug?: string;
+  categoryId?: string;
 }
 
 export interface CategoryItem {

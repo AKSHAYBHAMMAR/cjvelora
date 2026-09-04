@@ -1,12 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PRODUCTS } from '@/data/mock-data';
+import { Product } from '@/types';
+import { getMostLovedProducts } from '@/lib/products';
 import ProductCard from './ProductCard';
 import { Heart, Sparkles } from 'lucide-react';
 
 export default function MostLovedSection() {
-  const mostLovedProducts = PRODUCTS.filter((p) => p.isMostLoved);
+  const [mostLovedProducts, setMostLovedProducts] = useState<Product[]>(
+    PRODUCTS.filter((p) => p.isMostLoved)
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMostLoved() {
+      try {
+        const data = await getMostLovedProducts();
+        if (isMounted && data && data.length > 0) {
+          setMostLovedProducts(data);
+        }
+      } catch (err) {
+        console.warn('Failed to load most loved products from Supabase, retained fallback:', err);
+      }
+    }
+
+    loadMostLoved();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section id="most-loved" className="py-20 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/60 rounded-3xl my-6 border border-white/60">

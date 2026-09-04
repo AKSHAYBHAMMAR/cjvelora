@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import CategoryCard from './CategoryCard';
 import { CATEGORIES } from '@/data/mock-data';
+import { CategoryItem } from '@/types';
+import { getCategories } from '@/lib/categories';
 import { Sparkles, Layers } from 'lucide-react';
 
 interface CategorySectionProps {
@@ -14,7 +16,30 @@ export default function CategorySection({
   selectedCategory,
   onSelectCategory,
 }: CategorySectionProps) {
-  const totalProducts = CATEGORIES.reduce((acc, cat) => acc + cat.itemCount, 0);
+  const [categories, setCategories] = useState<CategoryItem[]>(CATEGORIES);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCategories() {
+      try {
+        const data = await getCategories();
+        if (isMounted && data && data.length > 0) {
+          setCategories(data);
+        }
+      } catch (err) {
+        console.warn('Failed to load categories from Supabase, retained fallback:', err);
+      }
+    }
+
+    loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const totalProducts = categories.reduce((acc, cat) => acc + cat.itemCount, 0);
 
   return (
     <section id="categories" className="py-20 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
@@ -55,7 +80,7 @@ export default function CategorySection({
 
       {/* 6 Category Visual Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5 sm:gap-6">
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <CategoryCard
             key={cat.id}
             category={cat}

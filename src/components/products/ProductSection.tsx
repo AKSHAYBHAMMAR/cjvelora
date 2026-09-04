@@ -1,18 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CategorySection from './CategorySection';
 import MostLovedSection from './MostLovedSection';
 import ProductCard from './ProductCard';
 import { PRODUCTS } from '@/data/mock-data';
+import { Product } from '@/types';
+import { getProducts } from '@/lib/products';
 import { Sparkles, X, Filter, ArrowRight } from 'lucide-react';
 
 export default function ProductSection() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProducts() {
+      try {
+        const data = await getProducts();
+        if (isMounted && data && data.length > 0) {
+          setProducts(data);
+        }
+      } catch (err) {
+        console.warn('Failed to load products from Supabase, retained fallback:', err);
+      }
+    }
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Filter products by selected category
   const filteredProducts = selectedCategory
-    ? PRODUCTS.filter((p) => p.category === selectedCategory)
+    ? products.filter((p) => p.category === selectedCategory)
     : [];
 
   return (
