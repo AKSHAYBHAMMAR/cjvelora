@@ -74,7 +74,7 @@ export default function CustomerOrdersPage() {
             Please sign in with your customer account to view your past orders and status.
           </p>
           <Link
-            href="/admin/login?next=/account/orders"
+            href="/customer/login?next=/account/orders"
             className="inline-block px-8 py-3 bg-[#d4af37] text-black text-xs uppercase tracking-widest font-semibold rounded-lg hover:bg-[#e5c158] transition-all"
           >
             Sign In
