@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const rawAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const rawAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  '';
 
 // Clean any surrounding quotes or whitespace that may be present in environment configurations
 const supabaseUrl = rawUrl.trim().replace(/^["']|["']$/g, '');

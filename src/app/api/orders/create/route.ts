@@ -21,7 +21,11 @@ export async function POST(req: NextRequest) {
     // 1. Verify authenticated user
     const authHeader = req.headers.get('authorization');
     const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/^["']|["']$/g, '');
-    const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim().replace(/^["']|["']$/g, '');
+    const supabaseAnonKey = (
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      ''
+    ).trim().replace(/^["']|["']$/g, '');
 
     let supabase = defaultSupabase;
 
