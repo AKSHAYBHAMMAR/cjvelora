@@ -74,7 +74,7 @@ export default function CheckoutPage() {
     setError(null);
 
     if (!user) {
-      setError('Please sign in or create an account to complete your luxury checkout.');
+      router.push('/customer/login?next=/checkout');
       return;
     }
 

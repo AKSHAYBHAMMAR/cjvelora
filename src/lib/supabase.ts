@@ -1,13 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const rawAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+// Clean any surrounding quotes or whitespace that may be present in environment configurations
+const supabaseUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+const supabaseAnonKey = rawAnonKey.trim().replace(/^["']|["']$/g, '');
 
 // Fallback during initial setup/build if environment variables are not yet populated
 const isConfigured = Boolean(
   supabaseUrl &&
   supabaseAnonKey &&
-  supabaseUrl.startsWith('http')
+  supabaseUrl.startsWith('http') &&
+  !supabaseUrl.includes('placeholder')
 );
 
 export const supabase = createClient(

@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
 
     // 1. Verify authenticated user
     const authHeader = req.headers.get('authorization');
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/^["']|["']$/g, '');
+    const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim().replace(/^["']|["']$/g, '');
 
     let supabase = defaultSupabase;
 
@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     const customerEmail = user?.email || body.shippingDetails?.email || '';
 
     // 2. Validate request payload
-    const { items, shippingDetails } = body;
+    const { items } = body;
+    const rawAddress = body.shippingAddress || body.shippingDetails;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -63,13 +64,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const shippingDetails = {
+      fullName: rawAddress?.fullName || '',
+      email: rawAddress?.email || customerEmail,
+      phone: rawAddress?.phone || '',
+      addressLine: rawAddress?.addressLine || rawAddress?.addressLine1 || '',
+      city: rawAddress?.city || '',
+      state: rawAddress?.state || '',
+      pincode: rawAddress?.pincode || rawAddress?.postalCode || '',
+      country: rawAddress?.country || 'India',
+    };
+
     if (
-      !shippingDetails ||
-      !shippingDetails.fullName?.trim() ||
-      !shippingDetails.addressLine?.trim() ||
-      !shippingDetails.city?.trim() ||
-      !shippingDetails.state?.trim() ||
-      !shippingDetails.pincode?.trim()
+      !shippingDetails.fullName.trim() ||
+      !shippingDetails.addressLine.trim() ||
+      !shippingDetails.city.trim() ||
+      !shippingDetails.state.trim() ||
+      !shippingDetails.pincode.trim()
     ) {
       return NextResponse.json(
         { success: false, error: 'Please complete all required shipping address fields.' },

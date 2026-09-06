@@ -15,6 +15,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  cleanDistDir: false,
 };
 
 export default nextConfig;
