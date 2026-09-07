@@ -283,13 +283,13 @@ export default function Navbar() {
               {customer ? (
                 <div className="relative group/account">
                   <Link
-                    href="/account/orders"
+                    href="/account"
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans uppercase tracking-widest font-medium transition-all ${
                       isDarkHeader
                         ? 'border border-[#d4af37]/60 text-white hover:text-[#d4af37] hover:border-[#d4af37] hover:bg-[#d4af37]/10'
                         : 'border border-charcoal/25 text-charcoal hover:text-soft-gold hover:border-soft-gold hover:bg-white/60'
                     }`}
-                    title={customer.fullName || customer.email || 'Customer Account'}
+                    title={customer.fullName || customer.email || customer.phone || 'Customer Account'}
                   >
                     <User className={`w-3.5 h-3.5 ${isDarkHeader ? 'text-[#d4af37]' : 'text-soft-gold'}`} />
                     <span className="hidden sm:inline font-medium">Account</span>
@@ -300,7 +300,7 @@ export default function Navbar() {
                     <div className="px-4 py-2 border-b border-white/10">
                       <p className="text-[10px] uppercase tracking-wider text-[#d4af37]">Customer Account</p>
                       <p className="text-xs truncate font-medium text-white/90 mt-0.5">
-                        {customer.fullName || customer.email}
+                        {customer.fullName || customer.email || customer.phone || 'Verified Client'}
                       </p>
                     </div>
                     <Link
@@ -463,7 +463,7 @@ export default function Navbar() {
           {customer ? (
             <div className="flex flex-col w-full gap-2.5">
               <Link
-                href="/account/orders"
+                href="/account"
                 onClick={closeMobileMenu}
                 className={`w-full py-3 rounded-full flex items-center justify-center gap-2 font-sans text-xs uppercase tracking-widest font-semibold transition-all ${
                   isDarkHeader
@@ -472,7 +472,7 @@ export default function Navbar() {
                 }`}
               >
                 <User className="w-4 h-4" />
-                <span>My Account ({customer.fullName?.split(' ')[0] || 'Orders'})</span>
+                <span>My Account ({customer.fullName?.split(' ')[0] || (customer.phone ? customer.phone.slice(-4) : 'Client')})</span>
               </Link>
               <button
                 onClick={handleSignOut}

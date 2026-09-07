@@ -12,6 +12,22 @@ export interface CustomerProfile {
   id: string;
   email: string;
   fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+  provider?: string;
+}
+
+/**
+ * Validates and sanitizes internal redirect URLs to prevent open-redirect vulnerabilities.
+ */
+export function sanitizeRedirectUrl(url: string | null | undefined, defaultUrl = '/account/orders'): string {
+  if (!url) return defaultUrl;
+  const trimmed = url.trim();
+  // Must start with '/' but NOT '//' or '/\' to prevent protocol-relative redirects
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\')) {
+    return trimmed;
+  }
+  return defaultUrl;
 }
 
 /**
@@ -111,7 +127,124 @@ export async function signInAdmin(
 }
 
 /**
- * Customer sign-in is deliberately separate from the admin flow.
+ * Initiates Google OAuth authentication for customers.
+ * Dynamically builds the redirect URL preserving the intended next destination.
+ */
+export async function signInWithGoogle(nextUrl = '/account/orders'): Promise<{ error: string | null }> {
+  try {
+    if (!isSupabaseConfigured) {
+      return { error: 'Authentication service is not configured.' };
+    }
+
+    const cleanNext = sanitizeRedirectUrl(nextUrl, '/account/orders');
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(cleanNext)}`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
+      },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { error: null };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to initialize Google authentication.' };
+  }
+}
+
+/**
+ * Sends a 6-digit SMS OTP to a customer phone number in E.164 format.
+ */
+export async function sendPhoneOtp(phoneNumber: string): Promise<{ error: string | null }> {
+  try {
+    if (!isSupabaseConfigured) {
+      return { error: 'Authentication service is not configured.' };
+    }
+
+    const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
+    if (!cleanPhone.startsWith('+') || cleanPhone.length < 9) {
+      return { error: 'Please enter a valid phone number with country code.' };
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: cleanPhone,
+      options: {
+        shouldCreateUser: true,
+      },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { error: null };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to send OTP.' };
+  }
+}
+
+/**
+ * Verifies the 6-digit SMS OTP token for customer sign-in.
+ */
+export async function verifyPhoneOtp(
+  phoneNumber: string,
+  token: string
+): Promise<{ profile: CustomerProfile | null; error: string | null }> {
+  try {
+    if (!isSupabaseConfigured) {
+      return { profile: null, error: 'Authentication service is not configured.' };
+    }
+
+    const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
+    const cleanToken = token.trim();
+
+    if (cleanToken.length !== 6) {
+      return { profile: null, error: 'Please enter the 6-digit verification code.' };
+    }
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: cleanPhone,
+      token: cleanToken,
+      type: 'sms',
+    });
+
+    if (error || !data.user) {
+      return { profile: null, error: error?.message || 'Invalid or expired verification code.' };
+    }
+
+    // Ensure phone auth cannot be used to usurp admin accounts
+    const adminRole = await verifyAdminRole(data.user.id, data.user.email);
+    if (adminRole) {
+      await supabase.auth.signOut();
+      return { profile: null, error: 'This credential belongs to an administrator account.' };
+    }
+
+    return {
+      profile: {
+        id: data.user.id,
+        email: data.user.email || '',
+        phone: data.user.phone || cleanPhone,
+        fullName: String(data.user.user_metadata?.full_name || 'Client').trim(),
+        provider: 'phone',
+      },
+      error: null,
+    };
+  } catch (err: any) {
+    return { profile: null, error: err?.message || 'An unexpected error occurred during verification.' };
+  }
+}
+
+/**
+ * Customer email + password sign-in.
  * An account with an admin role cannot use this customer login.
  */
 export async function signInCustomer(
@@ -142,7 +275,9 @@ export async function signInCustomer(
       profile: {
         id: data.user.id,
         email: data.user.email || email.trim(),
+        phone: data.user.phone,
         fullName: String(data.user.user_metadata?.full_name || '').trim(),
+        avatarUrl: data.user.user_metadata?.avatar_url,
       },
       error: null,
     };
@@ -154,7 +289,8 @@ export async function signInCustomer(
 export async function signUpCustomer(
   fullName: string,
   email: string,
-  password: string
+  password: string,
+  nextUrl = '/account/orders'
 ): Promise<{ profile: CustomerProfile | null; needsEmailConfirmation: boolean; error: string | null }> {
   try {
     if (!isSupabaseConfigured) {
@@ -167,10 +303,17 @@ export async function signUpCustomer(
     if (!cleanName) return { profile: null, needsEmailConfirmation: false, error: 'Please enter your full name.' };
     if (password.length < 8) return { profile: null, needsEmailConfirmation: false, error: 'Password must be at least 8 characters.' };
 
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const cleanNext = sanitizeRedirectUrl(nextUrl, '/account/orders');
+    const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(cleanNext)}`;
+
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
-      options: { data: { full_name: cleanName } },
+      options: {
+        data: { full_name: cleanName },
+        emailRedirectTo,
+      },
     });
 
     if (error || !data.user) {
@@ -188,6 +331,7 @@ export async function signUpCustomer(
       profile: {
         id: data.user.id,
         email: data.user.email || cleanEmail,
+        phone: data.user.phone,
         fullName: cleanName,
       },
       needsEmailConfirmation,
@@ -195,6 +339,76 @@ export async function signUpCustomer(
     };
   } catch (err: any) {
     return { profile: null, needsEmailConfirmation: false, error: err?.message || 'An unexpected error occurred during registration.' };
+  }
+}
+
+/**
+ * Resends confirmation email for unverified customer signup.
+ */
+export async function resendEmailVerification(email: string, nextUrl = '/account/orders'): Promise<{ error: string | null }> {
+  try {
+    if (!isSupabaseConfigured) return { error: 'Authentication service is not configured.' };
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const cleanNext = sanitizeRedirectUrl(nextUrl, '/account/orders');
+    const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(cleanNext)}`;
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to resend confirmation email.' };
+  }
+}
+
+/**
+ * Sends a password reset link to the customer's email.
+ */
+export async function resetPasswordForEmail(email: string): Promise<{ error: string | null }> {
+  try {
+    if (!isSupabaseConfigured) return { error: 'Authentication service is not configured.' };
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const redirectTo = `${origin}/customer/reset-password`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to send reset link.' };
+  }
+}
+
+/**
+ * Updates customer's password during reset password flow.
+ */
+export async function updateCustomerPassword(newPassword: string): Promise<{ error: string | null }> {
+  try {
+    if (!isSupabaseConfigured) return { error: 'Authentication service is not configured.' };
+    if (newPassword.length < 8) return { error: 'Password must be at least 8 characters long.' };
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  } catch (err: any) {
+    return { error: err?.message || 'Failed to update password.' };
   }
 }
 
@@ -208,10 +422,19 @@ export async function getCustomerProfile(): Promise<CustomerProfile | null> {
     const adminRole = await verifyAdminRole(user.id, user.email);
     if (adminRole) return null;
 
+    const provider = user.app_metadata?.provider || (user.phone ? 'phone' : 'email');
+
     return {
       id: user.id,
       email: user.email || '',
-      fullName: String(user.user_metadata?.full_name || '').trim(),
+      phone: user.phone,
+      fullName: String(
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        (user.phone ? `Client (${user.phone.slice(-4)})` : 'Client')
+      ).trim(),
+      avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+      provider,
     };
   } catch (err) {
     console.error('Error fetching customer profile:', err);

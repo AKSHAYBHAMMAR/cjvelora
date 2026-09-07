@@ -44,11 +44,15 @@ export default function CheckoutPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setUser(user);
-          // Pre-fill profile / user meta if available
+          // Pre-fill profile from available metadata or phone
           setFormData((prev) => ({
             ...prev,
-            email: user.email || '',
-            fullName: user.user_metadata?.full_name || '',
+            email: user.email || prev.email,
+            phone: user.phone || prev.phone,
+            fullName:
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              prev.fullName,
           }));
         }
       } catch (err) {
@@ -73,7 +77,9 @@ export default function CheckoutPage() {
     e.preventDefault();
     setError(null);
 
-    if (!user) {
+    // Verify session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !session.user) {
       router.push('/customer/login?next=/checkout');
       return;
     }
@@ -94,16 +100,21 @@ export default function CheckoutPage() {
     try {
       const response = await fetch('/api/orders/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
+          customerId: session.user.id,
           shippingAddress: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            addressLine1: formData.addressLine1,
-            city: formData.city,
-            state: formData.state,
-            postalCode: formData.postalCode,
-            country: formData.country,
+            fullName: formData.fullName.trim(),
+            email: (formData.email || session.user.email || '').trim(),
+            phone: (formData.phone || session.user.phone || '').trim(),
+            addressLine1: formData.addressLine1.trim(),
+            city: formData.city.trim(),
+            state: formData.state.trim(),
+            postalCode: formData.postalCode.trim(),
+            country: formData.country.trim() || 'India',
           },
           items: cart.map((item) => ({
             productId: item.product.id,

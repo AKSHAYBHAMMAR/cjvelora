@@ -1,75 +1,227 @@
 'use client';
 
-import { FormEvent, useState, Suspense } from 'react';
+import React, { FormEvent, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, LockKeyhole, Mail } from 'lucide-react';
-import { signInCustomer } from '@/lib/auth';
+import { ArrowLeft, Loader2, LockKeyhole, Mail, Phone, Eye, EyeOff } from 'lucide-react';
+import { signInCustomer, signInWithGoogle, sanitizeRedirectUrl } from '@/lib/auth';
+import PhoneAuthFlow from '@/components/auth/PhoneAuthFlow';
+
+function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path
+        fill="#EA4335"
+        d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8 0-1.3.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"
+      />
+    </svg>
+  );
+}
 
 function CustomerLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/account/orders';
+  const rawNext = searchParams.get('next') || '/account/orders';
+  const next = sanitizeRedirectUrl(rawNext, '/account/orders');
+
+  const [authMethod, setAuthMethod] = useState<'options' | 'phone'>('options');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError('');
+  const handleEmailSignIn = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
     setLoading(true);
+
     const result = await signInCustomer(email, password);
+    setLoading(false);
+
     if (result.error) {
       setError(result.error);
-      setLoading(false);
       return;
     }
-    router.push(next.startsWith('/') ? next : '/account/orders');
+
+    router.push(next);
     router.refresh();
-  }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    const result = await signInWithGoogle(next);
+    if (result.error) {
+      setError(result.error);
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md">
-      <Link href="/" className="inline-flex items-center text-xs uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-10 transition-colors">
+      <Link
+        href="/"
+        className="inline-flex items-center text-xs uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-8 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
       </Link>
+
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 sm:p-9 shadow-2xl">
+        {/* Brand Header */}
         <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
-          <h1 className="font-serif text-3xl mt-2">Welcome Back</h1>
-          <p className="text-sm text-white/50 mt-3">Sign in to your customer account.</p>
+          <h1 className="font-serif text-3xl mt-2 text-white">Client Portal</h1>
+          <p className="text-sm text-white/50 mt-2.5">Sign in to your private customer account.</p>
         </div>
 
-        {error && <div className="mb-5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{error}</div>}
+        {error && (
+          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300 animate-fade-in">
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-              <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#d4af37]" placeholder="you@example.com" />
+        {authMethod === 'phone' ? (
+          <PhoneAuthFlow
+            nextUrl={next}
+            onCancel={() => setAuthMethod('options')}
+          />
+        ) : (
+          <div className="space-y-6">
+            {/* Quick Multi-Method Action Buttons */}
+            <div className="space-y-3">
+              {/* Continue with Google */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading || loading}
+                className="w-full rounded-xl border border-white/15 bg-white/5 py-3 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+              >
+                {googleLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[#d4af37]" />
+                ) : (
+                  <GoogleIcon className="w-4 h-4" />
+                )}
+                <span>Continue with Google</span>
+              </button>
+
+              {/* Continue with Phone */}
+              <button
+                type="button"
+                onClick={() => setAuthMethod('phone')}
+                disabled={googleLoading || loading}
+                className="w-full rounded-xl border border-white/15 bg-white/5 py-3 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+              >
+                <Phone className="w-4 h-4 text-[#d4af37]" />
+                <span>Continue with Phone OTP</span>
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 my-2">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">Or email</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Email + Password Form */}
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs uppercase tracking-wider text-white/60">Password</label>
+                  <Link
+                    href="/customer/forgot-password"
+                    className="text-xs text-[#d4af37] hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                    placeholder="Your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || googleLoading}
+                className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing In...
+                  </span>
+                ) : (
+                  'Sign In with Email'
+                )}
+              </button>
+            </form>
+
+            <div className="pt-5 border-t border-white/10 text-center text-sm text-white/50">
+              New to CJVELORA?{' '}
+              <Link
+                href={`/customer/register?next=${encodeURIComponent(next)}`}
+                className="text-[#d4af37] hover:underline font-medium"
+              >
+                Create an account
+              </Link>
+            </div>
+
+            {/* Separate Admin Portal Link */}
+            <div className="pt-2 text-center">
+              <Link
+                href="/admin/login"
+                className="text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors"
+              >
+                Administrator Access
+              </Link>
             </div>
           </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Password</label>
-            <div className="relative">
-              <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-              <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#d4af37]" placeholder="Your password" />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Link href="/customer/forgot-password" className="text-xs text-[#d4af37] hover:underline">Forgot password?</Link>
-          </div>
-          <button disabled={loading} className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors">
-            {loading ? <span className="flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing In</span> : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="mt-7 pt-6 border-t border-white/10 text-center text-sm text-white/50">
-          New to CJVELORA? <Link href={`/customer/register?next=${encodeURIComponent(next)}`} className="text-[#d4af37] hover:underline">Create an account</Link>
-        </div>
-        <Link href="/admin/login" className="block text-center text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 mt-6">Administrator access</Link>
+        )}
       </div>
     </div>
   );
@@ -78,7 +230,13 @@ function CustomerLoginForm() {
 export default function CustomerLoginPage() {
   return (
     <main className="min-h-screen bg-[#0a0e14] text-white flex items-center justify-center px-4 py-20">
-      <Suspense fallback={<div className="flex items-center justify-center text-white"><Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" /></div>}>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center text-white">
+            <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
+          </div>
+        }
+      >
         <CustomerLoginForm />
       </Suspense>
     </main>

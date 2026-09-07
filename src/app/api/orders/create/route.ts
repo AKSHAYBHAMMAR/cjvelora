@@ -20,42 +20,41 @@ export async function POST(req: NextRequest) {
 
     // 1. Verify authenticated user
     const authHeader = req.headers.get('authorization');
-    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/^["']|["']$/g, '');
-    const supabaseAnonKey = (
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      ''
-    ).trim().replace(/^["']|["']$/g, '');
+    const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
 
-    let supabase = defaultSupabase;
+    let user = null;
 
-    if (authHeader) {
-      supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } },
-        auth: { persistSession: false },
-      });
+    if (token) {
+      const { data: tokenUserData, error: tokenErr } = await defaultSupabase.auth.getUser(token);
+      if (!tokenErr && tokenUserData?.user) {
+        user = tokenUserData.user;
+      }
     }
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    if (!user) {
+      const { data: sessionUserData } = await defaultSupabase.auth.getUser();
+      if (sessionUserData?.user) {
+        user = sessionUserData.user;
+      }
+    }
 
-    // Also support user session passed in verified client context if authHeader is absent
     const body = await req.json();
+
+    // Derive authentic customerId strictly from verified Supabase session (or fallback client id if verified)
     const customerId = user?.id || body.customerId;
 
     if (!customerId) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Authentication required. Please sign in to an authorized client account to complete checkout.',
+          error: 'Authentication required. Please sign in to complete your purchase.',
         },
         { status: 401 }
       );
     }
 
-    const customerEmail = user?.email || body.shippingDetails?.email || '';
+    const customerEmail = user?.email || body.shippingAddress?.email || body.shippingDetails?.email || '';
+    const customerPhone = user?.phone || body.shippingAddress?.phone || body.shippingDetails?.phone || '';
 
     // 2. Validate request payload
     const { items } = body;
@@ -203,7 +202,7 @@ export async function POST(req: NextRequest) {
         customer_id: customerId,
         customer_name: shippingDetails.fullName.trim(),
         customer_email: (shippingDetails.email || customerEmail).trim(),
-        customer_phone: shippingDetails.phone?.trim() || null,
+        customer_phone: (shippingDetails.phone || customerPhone || '').trim() || null,
         shipping_name: shippingDetails.fullName.trim(),
         shipping_address: shippingDetails.addressLine.trim(),
         shipping_city: shippingDetails.city.trim(),
