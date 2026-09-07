@@ -40,7 +40,7 @@ export default function CraftProcess() {
   return (
     <section
       id="process"
-      className="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/70 rounded-3xl my-12"
+      className="scroll-mt-24 py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/70 rounded-3xl my-12"
     >
       <div className="text-center max-w-3xl mx-auto mb-20 space-y-3">
         <span className="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block font-medium">

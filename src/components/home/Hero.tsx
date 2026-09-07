@@ -49,10 +49,10 @@ export default function Hero({
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <Link
-              href="#collections"
-              className="bg-navy text-ivory font-sans text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-luxury flex items-center gap-3 group"
+              href="#categories"
+              className="bg-navy text-ivory font-sans text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-luxury flex items-center gap-3 group cursor-pointer"
             >
-              <span>Shop Crochet</span>
+              <span>Explore Collection</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
 

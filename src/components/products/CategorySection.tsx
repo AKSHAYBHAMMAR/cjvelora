@@ -42,7 +42,7 @@ export default function CategorySection({
   const totalProducts = categories.reduce((acc, cat) => acc + cat.itemCount, 0);
 
   return (
-    <section id="categories" className="py-20 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+    <section id="categories" className="scroll-mt-24 py-20 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
       
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">

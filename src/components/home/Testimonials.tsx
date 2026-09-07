@@ -6,7 +6,7 @@ import { TESTIMONIALS } from '@/data/mock-data';
 
 export default function Testimonials() {
   return (
-    <section id="testimonials" className="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+    <section id="testimonials" className="scroll-mt-24 py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
       
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">

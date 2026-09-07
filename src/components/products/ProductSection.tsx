@@ -40,7 +40,8 @@ export default function ProductSection() {
     : [];
 
   return (
-    <div id="shop" className="space-y-6">
+    <div id="collections" className="scroll-mt-24">
+      <div id="shop" className="space-y-6">
       
       {/* 1. CATEGORY SECTION ("Shop by Category") */}
       <CategorySection
@@ -119,6 +120,7 @@ export default function ProductSection() {
       {/* 2. MOST LOVED PRODUCTS ("Most Loved by You ❤️") */}
       <MostLovedSection />
 
+      </div>
     </div>
   );
 }

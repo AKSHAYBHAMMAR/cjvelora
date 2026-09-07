@@ -5,7 +5,7 @@ import { Sparkles, HeartHandshake, ShieldCheck } from 'lucide-react';
 
 export default function AtelierStory() {
   return (
-    <section id="about" className="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto relative overflow-hidden">
+    <section id="about" className="scroll-mt-24 py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto relative overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         
         {/* Left Column (5 cols) */}
