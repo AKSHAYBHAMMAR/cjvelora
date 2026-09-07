@@ -52,7 +52,18 @@ export default function PhoneAuthFlow({ nextUrl = '/account/orders', onCancel }:
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  const fullPhoneNumber = `${selectedCountry}${rawPhone.trim()}`;
+  const getE164Phone = () => {
+    let digits = rawPhone.replace(/\D/g, '');
+    const countryDigits = selectedCountry.replace(/\D/g, '');
+    if (digits.startsWith(countryDigits) && digits.length === countryDigits.length + 10) {
+      digits = digits.slice(countryDigits.length);
+    } else if (digits.startsWith('0') && digits.length === 11) {
+      digits = digits.slice(1);
+    }
+    return `${selectedCountry}${digits}`;
+  };
+
+  const fullPhoneNumber = getE164Phone();
 
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
