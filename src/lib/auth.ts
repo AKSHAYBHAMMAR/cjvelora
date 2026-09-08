@@ -128,7 +128,8 @@ export async function signInAdmin(
 
 /**
  * Initiates Google OAuth authentication for customers.
- * Dynamically builds the redirect URL preserving the intended next destination.
+ * Uses clean redirectTo matching Supabase's configured redirect URL whitelist,
+ * while preserving the intended next destination in sessionStorage.
  */
 export async function signInWithGoogle(nextUrl = '/account/orders'): Promise<{ error: string | null }> {
   try {
@@ -137,17 +138,24 @@ export async function signInWithGoogle(nextUrl = '/account/orders'): Promise<{ e
     }
 
     const cleanNext = sanitizeRedirectUrl(nextUrl, '/account/orders');
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(cleanNext)}`;
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('velora_auth_next', cleanNext);
+      } catch {
+        // Ignore storage errors in restricted browser modes
+      }
+    }
+
+    const origin =
+      typeof window !== 'undefined' && window.location.origin
+        ? window.location.origin
+        : 'https://cjvelora.vercel.app';
+    const redirectTo = `${origin}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'select_account',
-        },
       },
     });
 

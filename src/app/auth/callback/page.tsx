@@ -31,42 +31,57 @@ function AuthCallbackHandler() {
           return;
         }
 
-        const rawNext = searchParams.get('next');
-        const cleanNext = sanitizeRedirectUrl(rawNext, '/account/orders');
+        // Resolve destination from sessionStorage (set during signInWithGoogle) or query parameters
+        let cleanNext = '/account/orders';
+        if (typeof window !== 'undefined') {
+          try {
+            const savedNext = sessionStorage.getItem('velora_auth_next');
+            if (savedNext) {
+              cleanNext = sanitizeRedirectUrl(savedNext, '/account/orders');
+              sessionStorage.removeItem('velora_auth_next');
+            } else {
+              cleanNext = sanitizeRedirectUrl(searchParams.get('next'), '/account/orders');
+            }
+          } catch {
+            cleanNext = sanitizeRedirectUrl(searchParams.get('next'), '/account/orders');
+          }
+        }
 
-        // 2. If an authorization code was returned (PKCE flow), exchange it for a session
+        // 2. Check existing session first (auto-handled by detectSessionInUrl)
+        let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        // If no active session yet and code is present, exchange authorization code
         const code = searchParams.get('code');
-        if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (!session?.user && code) {
+          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.warn('Notice: Code exchange error:', exchangeError);
+          } else if (exchangeData?.session) {
+            session = exchangeData.session;
           }
         }
 
-        // 3. Verify session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError || !session?.user) {
-          // Check if session exists in getUser
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            if (isMounted) {
-              setStatus('error');
-              setErrorMessage('No active authentication session was found. Please try signing in again.');
-            }
-            return;
-          }
+        // 3. Verify active user
+        let user = session?.user;
+        if (!user) {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          user = currentUser || undefined;
         }
 
-        const user = session?.user;
-        if (user) {
-          // 4. Security Check: Customers must NEVER be administrators
-          const adminRole = await verifyAdminRole(user.id, user.email);
-          if (adminRole) {
-            await supabase.auth.signOut();
-            router.push('/admin/login?error=admin_account_detected');
-            return;
+        if (!user) {
+          if (isMounted) {
+            setStatus('error');
+            setErrorMessage('No active authentication session was found. Please try signing in again.');
           }
+          return;
+        }
+
+        // 4. Security Check: Customers must NEVER be administrators
+        const adminRole = await verifyAdminRole(user.id, user.email);
+        if (adminRole) {
+          await supabase.auth.signOut();
+          router.push('/admin/login?error=admin_account_detected');
+          return;
         }
 
         if (isMounted) {
