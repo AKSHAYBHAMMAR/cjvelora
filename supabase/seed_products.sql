@@ -1,11 +1,16 @@
+-- VELORA — Products Seed Script (21 Products) — corrected for current schema
 -- ==============================================================================
--- CJVELORA — Supabase Products Seed Script (21 Products)
+-- is_published defaults to false in the live schema. The seed temporarily
+-- defaults it to true so all seeded products are published, then restores
+-- the normal false default for future products. Existing conflicting slugs
+-- are explicitly published in the ON CONFLICT update below.
 -- ==============================================================================
--- Seeds all 21 existing handcrafted creations into the Supabase 'products' table.
--- Accurately preserves names, slugs, descriptions, prices, compare_at_prices,
--- materials, dimensions, care instructions, image references, best-seller status,
--- ratings, and links each product to its category via (SELECT id FROM categories).
--- ==============================================================================
+
+BEGIN;
+
+ALTER TABLE public.products
+  ALTER COLUMN is_published SET DEFAULT true;
+
 
 INSERT INTO public.products (
   category_id,
@@ -493,6 +498,7 @@ ON CONFLICT (slug) DO UPDATE SET
   care_instructions = EXCLUDED.care_instructions,
   image_url = EXCLUDED.image_url,
   badge = EXCLUDED.badge,
+  is_published = true,
   is_best_seller = EXCLUDED.is_best_seller,
   is_made_to_order = EXCLUDED.is_made_to_order,
   lead_time = EXCLUDED.lead_time,
@@ -501,18 +507,19 @@ ON CONFLICT (slug) DO UPDATE SET
   in_stock = EXCLUDED.in_stock,
   colors = EXCLUDED.colors;
 
--- Ensure RLS allows public SELECT on products:
+-- Ensure only published products are publicly readable.
 ALTER TABLE IF EXISTS public.products ENABLE ROW LEVEL SECURITY;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'products' AND policyname = 'Allow public read access to products'
-  ) THEN
-    CREATE POLICY "Allow public read access to products"
-      ON public.products
-      FOR SELECT
-      TO anon, authenticated
-      USING (true);
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Allow public read access to products" ON public.products;
+
+CREATE POLICY "Allow public read access to products"
+  ON public.products
+  FOR SELECT
+  TO anon, authenticated
+  USING (is_published = true);
+
+-- Restore the normal default for future products.
+ALTER TABLE public.products
+  ALTER COLUMN is_published SET DEFAULT false;
+
+COMMIT;
