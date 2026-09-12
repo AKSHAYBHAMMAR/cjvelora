@@ -4,7 +4,7 @@ import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabas
 
 function generateOrderNumber(): string {
   const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `VEL-${dateStr}-${randomSuffix}`;
 }
@@ -18,43 +18,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Verify authenticated user
+    // 1. Verify the authenticated user from the request access token.
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
 
-    let user = null;
-
-    if (token) {
-      const { data: tokenUserData, error: tokenErr } = await defaultSupabase.auth.getUser(token);
-      if (!tokenErr && tokenUserData?.user) {
-        user = tokenUserData.user;
-      }
-    }
-
-    if (!user) {
-      const { data: sessionUserData } = await defaultSupabase.auth.getUser();
-      if (sessionUserData?.user) {
-        user = sessionUserData.user;
-      }
-    }
-
-    const body = await req.json();
-
-    // Derive authentic customerId strictly from verified Supabase session (or fallback client id if verified)
-    const customerId = user?.id || body.customerId;
-
-    if (!customerId) {
+    if (!token) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Authentication required. Please sign in to complete your purchase.',
-        },
+        { success: false, error: 'Authentication required. Please sign in to complete your purchase.' },
         { status: 401 }
       );
     }
 
-    const customerEmail = user?.email || body.shippingAddress?.email || body.shippingDetails?.email || '';
-    const customerPhone = user?.phone || body.shippingAddress?.phone || body.shippingDetails?.phone || '';
+    const { data: tokenUserData, error: tokenErr } = await defaultSupabase.auth.getUser(token);
+    const user = tokenUserData?.user;
+
+    if (tokenErr || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Your session is invalid or expired. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
+    // Use a Supabase client authenticated with the verified user's JWT.
+    // This makes subsequent database operations run under auth.uid(), so RLS
+    // policies can securely enforce ownership of the order.
+    const userSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    );
+
+    const customerId = user.id;
+    const customerEmail = user.email || '';
+    const customerPhone = user.phone || '';
+
+    const body = await req.json();
 
     // 2. Validate request payload
     const { items } = body;
@@ -70,7 +78,7 @@ export async function POST(req: NextRequest) {
     const shippingDetails = {
       fullName: rawAddress?.fullName || '',
       email: rawAddress?.email || customerEmail,
-      phone: rawAddress?.phone || '',
+      phone: rawAddress?.phone || customerPhone,
       addressLine: rawAddress?.addressLine || rawAddress?.addressLine1 || '',
       city: rawAddress?.city || '',
       state: rawAddress?.state || '',
@@ -95,11 +103,11 @@ export async function POST(req: NextRequest) {
     const productIds = items.map((i: any) => i.productId);
 
     const [productsRes, inventoryRes] = await Promise.all([
-      defaultSupabase
+      userSupabase
         .from('products')
         .select('id, name, slug, price, is_published, in_stock, image_url, image')
         .in('id', productIds),
-      defaultSupabase
+      userSupabase
         .from('inventory')
         .select('product_id, quantity, reserved_quantity, low_stock_threshold')
         .in('product_id', productIds),
@@ -132,12 +140,11 @@ export async function POST(req: NextRequest) {
       const product = productsMap.get(item.productId);
       if (!product) {
         return NextResponse.json(
-          { success: false, error: `One of the selected items is no longer available in our catalog.` },
+          { success: false, error: 'One of the selected items is no longer available in our catalog.' },
           { status: 400 }
         );
       }
 
-      // Check published status
       if (product.is_published === false) {
         return NextResponse.json(
           { success: false, error: `"${product.name}" is currently unavailable for purchase.` },
@@ -153,7 +160,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Check stock availability
       const inv = inventoryMap.get(product.id);
       if (inv) {
         const onHand = Number(inv.quantity ?? 0);
@@ -171,7 +177,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Calculate server-side prices
       const unitPrice = Number(product.price);
       const lineTotal = unitPrice * requestedQty;
       calculatedSubtotal += lineTotal;
@@ -186,7 +191,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. Calculate final financial figures server-side (Complimentary express delivery)
+    // 5. Calculate final financial figures server-side
     const shippingFee = 0;
     const discountAmount = 0;
     const finalTotal = calculatedSubtotal + shippingFee - discountAmount;
@@ -194,8 +199,8 @@ export async function POST(req: NextRequest) {
     // 6. Generate collision-resistant unique order number
     const orderNumber = generateOrderNumber();
 
-    // 7. Create orders record in Supabase
-    const { data: orderRow, error: orderError } = await defaultSupabase
+    // 7. Create orders record using the authenticated user-scoped client
+    const { data: orderRow, error: orderError } = await userSupabase
       .from('orders')
       .insert({
         order_number: orderNumber,
@@ -218,90 +223,71 @@ export async function POST(req: NextRequest) {
         payment_status: 'pending',
         payment_method: 'razorpay',
       })
-      .select('id, order_number, total_amount')
+      .select()
       .single();
 
     if (orderError || !orderRow) {
+      console.error('Order insert error:', orderError);
       return NextResponse.json(
-        { success: false, error: `Failed to create order record: ${orderError?.message || 'Database error'}` },
+        { success: false, error: `Failed to create order record: ${orderError?.message || 'Unknown database error'}` },
         { status: 500 }
       );
     }
 
-    // 8. Create order_items snapshot records
-    const orderItemRows = validatedItems.map((v) => ({
+    // 8. Create order items
+    const orderItems = validatedItems.map((item) => ({
       order_id: orderRow.id,
-      product_id: v.productId,
-      product_name: v.productName,
-      unit_price: v.unitPrice,
-      quantity: v.quantity,
-      line_total: v.lineTotal,
+      product_id: item.productId,
+      product_name: item.productName,
+      unit_price: item.unitPrice,
+      quantity: item.quantity,
+      total_price: item.lineTotal,
     }));
 
-    const { error: itemsInsertError } = await defaultSupabase
+    const { error: orderItemsError } = await userSupabase
       .from('order_items')
-      .insert(orderItemRows);
+      .insert(orderItems);
 
-    if (itemsInsertError) {
-      // Atomicity guard: clean up order header if items failed
-      await defaultSupabase.from('orders').delete().eq('id', orderRow.id);
+    if (orderItemsError) {
+      console.error('Order items insert error:', orderItemsError);
       return NextResponse.json(
-        { success: false, error: `Failed to record order items: ${itemsInsertError.message}` },
+        { success: false, error: `Failed to create order items: ${orderItemsError.message}` },
         { status: 500 }
       );
     }
 
-    // 9. Clear user's active cart in Supabase if cart exists
+    // 9. Best-effort cart cleanup and audit logging
     try {
-      const { data: userCart } = await defaultSupabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', customerId)
-        .maybeSingle();
-
-      if (userCart) {
-        await defaultSupabase.from('cart_items').delete().eq('cart_id', userCart.id);
-      }
-    } catch (cartCleanErr) {
-      console.warn('Notice: cart cleanup notice:', cartCleanErr);
+      await userSupabase.from('cart_items').delete().eq('user_id', customerId);
+    } catch (err) {
+      console.warn('Cart cleanup warning:', err);
     }
 
-    // 10. Record audit entry
     try {
-      await defaultSupabase.from('audit_logs').insert({
+      await userSupabase.from('audit_logs').insert({
+        action: 'order_created',
         user_id: customerId,
-        action: 'CUSTOMER_ORDER_CREATED',
-        entity_type: 'orders',
-        entity_id: orderRow.id,
-        details: {
-          order_number: orderRow.order_number,
+        metadata: {
+          order_id: orderRow.id,
+          order_number: orderNumber,
           total_amount: finalTotal,
-          item_count: validatedItems.length,
-          payment_method: 'razorpay',
-          status: 'pending',
-          timestamp: new Date().toISOString(),
         },
       });
-    } catch (auditErr) {
-      console.warn('Notice: Could not record audit log:', auditErr);
+    } catch (err) {
+      console.warn('Audit log warning:', err);
     }
 
     return NextResponse.json({
       success: true,
-      orderNumber: orderRow.order_number,
       orderId: orderRow.id,
-      total: finalTotal,
-      subtotal: calculatedSubtotal,
-      shippingFee,
-      discount: discountAmount,
-      status: 'pending',
+      orderNumber,
+      totalAmount: finalTotal,
       paymentStatus: 'pending',
-      message: 'Order created successfully and awaiting payment.',
     });
-  } catch (err: any) {
-    console.error('Fatal order creation error:', err);
+  } catch (error: any) {
+    console.error('Create order API error:', error);
     return NextResponse.json(
-      { success: false, error: err?.message || 'An unexpected error occurred during order creation.' },
+      { success: false, error: error?.message || 'Failed to create order.' },
       { status: 500 }
     );
   }
