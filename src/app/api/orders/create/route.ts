@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
         customer_phone: (shippingDetails.phone || customerPhone || '').trim() || null,
         shipping_name: shippingDetails.fullName.trim(),
         shipping_address: shippingDetails.addressLine.trim(),
+        shipping_address_line1: shippingDetails.addressLine.trim(),
         shipping_city: shippingDetails.city.trim(),
         shipping_state: shippingDetails.state.trim(),
         shipping_postal_code: shippingDetails.pincode.trim(),
