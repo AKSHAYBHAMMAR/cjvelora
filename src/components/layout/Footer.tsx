@@ -27,30 +27,30 @@ export default function Footer() {
   };
 
   return (
-    <footer className="w-full bg-charcoal text-ivory pt-20 pb-12 border-t border-soft-gold/20">
-      <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 grid grid-cols-1 md:grid-cols-12 gap-12 pb-16 border-b border-ivory/10">
+    <footer className="w-full bg-charcoal text-ivory pt-12 sm:pt-20 pb-8 sm:pb-12 border-t border-soft-gold/20">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-20 grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-12 pb-10 sm:pb-16 border-b border-ivory/10">
         
         {/* Brand Column (5 cols) */}
         <div className="md:col-span-5 space-y-4">
           <Link href="#hero" className="inline-block">
-            <span className="font-serif text-3xl font-bold text-ivory tracking-tight block">
+            <span className="font-serif text-2xl sm:text-3xl font-bold text-ivory tracking-tight block">
               VELORA
             </span>
-            <span className="font-tech text-[9px] uppercase tracking-[0.35em] text-soft-gold">
+            <span className="font-tech text-[8px] sm:text-[9px] uppercase tracking-[0.3em] sm:tracking-[0.35em] text-soft-gold">
               Handmade Luxury Atelier
             </span>
           </Link>
-          <p className="font-serif italic text-base text-ivory/70 max-w-sm font-light">
+          <p className="font-serif italic text-sm sm:text-base text-ivory/70 max-w-sm font-light">
             Luxury handmade crochet brand bridging traditional heirloom artisan techniques with soft modern aesthetics.
           </p>
         </div>
 
         {/* Navigation Quick Links (3 cols) */}
-        <div className="md:col-span-3 space-y-4">
+        <div className="md:col-span-3 space-y-3 sm:space-y-4">
           <h4 className="font-tech text-xs uppercase tracking-widest text-soft-gold font-semibold">
             Navigation
           </h4>
-          <ul className="space-y-2.5 font-sans text-xs text-ivory/70">
+          <ul className="space-y-2 sm:space-y-2.5 font-sans text-xs text-ivory/70">
             <li>
               <Link href="#hero" className="hover:text-soft-gold transition-colors">
                 Home
@@ -85,7 +85,7 @@ export default function Footer() {
         </div>
 
         {/* Newsletter (4 cols) */}
-        <div className="md:col-span-4 space-y-4">
+        <div className="md:col-span-4 space-y-3 sm:space-y-4">
           <h4 className="font-tech text-xs uppercase tracking-widest text-soft-gold font-semibold">
             Atelier Journal
           </h4>
@@ -110,7 +110,7 @@ export default function Footer() {
               />
               <button
                 type="submit"
-                className="bg-soft-gold text-navy font-sans text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-white font-semibold transition-colors cursor-pointer"
+                className="bg-soft-gold text-navy font-sans text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-white font-semibold transition-colors cursor-pointer shrink-0"
               >
                 Join
               </button>
@@ -121,9 +121,9 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 pt-8 flex flex-col sm:flex-row items-center justify-between font-tech text-[10px] text-ivory/50 uppercase tracking-widest gap-4">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-20 pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between font-tech text-[9px] sm:text-[10px] text-ivory/50 uppercase tracking-wider sm:tracking-widest gap-3 sm:gap-4 text-center sm:text-left">
         <p>© 2026 VELORA. All Rights Reserved. Crafted with passion.</p>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-6">
           <a href="#" className="hover:text-ivory transition-colors">Privacy Policy</a>
           <a href="#" className="hover:text-ivory transition-colors">Terms of Service</a>
           <a href="#" className="hover:text-ivory transition-colors">Shipping & Care Guide</a>

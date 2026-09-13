@@ -803,8 +803,8 @@ export default function AdminProductsPage() {
           <p className="font-sans text-xs">Loading creations from Supabase database...</p>
         </div>
       ) : filteredProducts.length > 0 ? (
-        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-2xl">
-          <table className="w-full text-left border-collapse">
+        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-2xl overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="border-b border-white/10 bg-white/[0.02] text-ivory/50 font-tech uppercase text-[10px] tracking-wider">
                 <th className="py-3.5 px-6">Product</th>

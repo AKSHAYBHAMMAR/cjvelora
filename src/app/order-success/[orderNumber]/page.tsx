@@ -98,27 +98,27 @@ export default function OrderSuccessPage() {
   const displayStatus = order.order_status || order.status || 'pending';
 
   return (
-    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-3.5 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* Header Confirmation Banner */}
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-[#d4af37]" />
+        <div className="text-center mb-8 sm:mb-10">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-[#d4af37]" />
           </div>
-          <span className="text-xs uppercase tracking-[0.3em] text-[#d4af37] font-medium">
+          <span className="text-[10px] sm:text-xs uppercase tracking-[0.25em] sm:tracking-[0.3em] text-[#d4af37] font-medium">
             Order Securely Registered
           </span>
-          <h1 className="text-3xl sm:text-4xl font-serif text-white mt-2">
+          <h1 className="text-2xl sm:text-4xl font-serif text-white mt-1.5 sm:mt-2">
             Thank You for Choosing Velora
           </h1>
-          <p className="text-sm text-white/60 mt-2">
-            Your high jewelry order reference is{' '}
-            <span className="font-mono font-bold text-white">{order.order_number}</span>
+          <p className="text-xs sm:text-sm text-white/60 mt-1.5 sm:mt-2">
+            Your order reference is{' '}
+            <span className="font-mono font-bold text-white break-all">{order.order_number}</span>
           </p>
         </div>
 
         {/* Payment Confirmation Banner */}
-        <div className="mb-8 p-5 rounded-2xl bg-white/[0.02] border border-[#d4af37]/30 backdrop-blur-sm">
+        <div className="mb-6 sm:mb-8 p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-[#d4af37]/30 backdrop-blur-sm">
           <div className="flex items-start space-x-3">
             {isPaid ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
@@ -126,12 +126,12 @@ export default function OrderSuccessPage() {
               <Clock className="w-5 h-5 text-[#d4af37] mt-0.5 flex-shrink-0" />
             )}
             <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="text-sm font-semibold text-white">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xs sm:text-sm font-semibold text-white">
                   {isPaid ? 'Payment Confirmed' : 'Payment Processing'}
                 </h3>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                  className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
                     isPaid
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                       : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
@@ -150,9 +150,9 @@ export default function OrderSuccessPage() {
         </div>
 
         {/* Order Details Card */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm space-y-6">
+        <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-8 backdrop-blur-sm space-y-5 sm:space-y-6">
           {/* Metadata Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-6 border-b border-white/10 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pb-5 sm:pb-6 border-b border-white/10 text-xs">
             <div>
               <span className="text-white/40 uppercase tracking-wider block mb-1">Order Date</span>
               <span className="text-white font-medium">

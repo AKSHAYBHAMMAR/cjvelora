@@ -133,17 +133,17 @@ export default function CustomerOrderDetailPage() {
   const discountVal = Number(order.discount_amount ?? order.discount ?? 0);
 
   return (
-    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-3.5 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10 gap-2">
           <Link
             href="/account/orders"
-            className="flex items-center text-xs tracking-widest uppercase text-white/60 hover:text-[#d4af37] transition-colors"
+            className="flex items-center text-xs tracking-widest uppercase text-white/60 hover:text-[#d4af37] transition-colors shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> All Orders
+            <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" /> All Orders
           </Link>
-          <span className="text-xs font-mono text-[#d4af37] font-semibold">
+          <span className="text-xs font-mono text-[#d4af37] font-semibold break-all">
             {order.order_number}
           </span>
         </div>
@@ -154,7 +154,7 @@ export default function CustomerOrderDetailPage() {
             <span className="text-xs uppercase tracking-[0.3em] text-[#d4af37] font-medium">
               Acquisition Record
             </span>
-            <h1 className="text-2xl sm:text-3xl font-serif tracking-wide text-white mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif tracking-wide text-white mt-1 break-all">
               Order #{order.order_number}
             </h1>
             <p className="text-xs text-white/50 mt-1 flex items-center">
@@ -168,7 +168,7 @@ export default function CustomerOrderDetailPage() {
             </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
             <span
               className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
                 displayStatus === 'completed' || displayStatus === 'delivered'
@@ -187,12 +187,12 @@ export default function CustomerOrderDetailPage() {
         </div>
 
         {/* Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main: Items Snapshot & Pricing */}
           <div className="lg:col-span-2 space-y-6">
             {/* Items Card */}
-            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-              <h2 className="text-sm uppercase tracking-wider text-white/60 mb-4 pb-3 border-b border-white/5 flex items-center">
+            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-6 backdrop-blur-sm">
+              <h2 className="text-xs sm:text-sm uppercase tracking-wider text-white/60 mb-4 pb-3 border-b border-white/5 flex items-center">
                 <Package className="w-4 h-4 mr-2 text-[#d4af37]" /> Purchased Pieces (Historical Snapshot)
               </h2>
 
@@ -202,7 +202,7 @@ export default function CustomerOrderDetailPage() {
                     item.subtotal ?? item.line_total ?? item.total_price ?? (Number(item.unit_price) * item.quantity)
                   );
                   return (
-                    <div key={item.id} className="py-4 flex items-center justify-between">
+                    <div key={item.id} className="py-3 sm:py-4 flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 sm:gap-2">
                       <div>
                         <h3 className="text-sm font-serif text-white font-medium">
                           {item.product_name}

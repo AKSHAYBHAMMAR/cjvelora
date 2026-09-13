@@ -27,33 +27,33 @@ export default function ContactSection() {
   };
 
   return (
-    <section id="contact" className="scroll-mt-24 py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+    <section id="contact" className="scroll-mt-24 py-12 sm:py-24 px-3.5 sm:px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         
         {/* Left Column (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-4 sm:space-y-6">
           <span className="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block font-medium">
             Get In Touch
           </span>
-          <h2 className="font-serif text-3xl md:text-5xl font-semibold text-charcoal tracking-tight">
+          <h2 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-charcoal tracking-tight">
             Connect With VELORA
           </h2>
-          <p className="font-sans text-base text-charcoal/80 leading-relaxed font-light">
+          <p className="font-sans text-sm sm:text-base text-charcoal/80 leading-relaxed font-light">
             Have questions about a bespoke custom crochet commission, personalized heirloom gifts, or wholesale boutique inquiries? Send us a message and our master artisan concierge will respond within 24 hours.
           </p>
 
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-full bg-soft-gold/20 flex items-center justify-center text-soft-gold shrink-0">
-                <Mail className="w-5 h-5" />
+          <div className="space-y-4 pt-2 sm:pt-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-soft-gold/20 flex items-center justify-center text-soft-gold shrink-0">
+                <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <span className="font-tech text-[10px] uppercase text-olive-accent tracking-wider block">
+              <div className="min-w-0">
+                <span className="font-tech text-[9px] sm:text-[10px] uppercase text-olive-accent tracking-wider block">
                   Email Atelier Concierge
                 </span>
                 <a
                   href="mailto:cjsvelora01@gmail.com"
-                  className="font-sans text-sm font-medium text-charcoal hover:text-soft-gold transition-colors block"
+                  className="font-sans text-xs sm:text-sm font-medium text-charcoal hover:text-soft-gold transition-colors block truncate"
                 >
                   cjsvelora01@gmail.com
                 </a>
@@ -63,7 +63,7 @@ export default function ContactSection() {
         </div>
 
         {/* Right Form (7 cols) */}
-        <div className="lg:col-span-7 glass-card p-8 md:p-12 rounded-3xl border border-white bg-white/80 shadow-luxury">
+        <div className="lg:col-span-7 glass-card p-5 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl border border-white bg-white/80 shadow-luxury">
           {submitted ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 animate-fade-in">
               <div className="w-16 h-16 rounded-full bg-soft-gold/20 flex items-center justify-center text-soft-gold">

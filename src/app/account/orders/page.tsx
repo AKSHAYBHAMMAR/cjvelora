@@ -85,61 +85,61 @@ export default function CustomerOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-3.5 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Header Breadcrumb */}
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10 gap-2">
           <Link
             href="/"
-            className="flex items-center text-xs tracking-widest uppercase text-white/60 hover:text-[#d4af37] transition-colors"
+            className="flex items-center text-xs tracking-widest uppercase text-white/60 hover:text-[#d4af37] transition-colors shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
+            <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" /> Back to Boutique
           </Link>
-          <span className="text-xs text-white/40 tracking-wider">
+          <span className="text-xs text-white/40 tracking-wider truncate max-w-[140px] sm:max-w-none">
             Client: {user.email || user.phone || 'Verified Client'}
           </span>
         </div>
 
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
           <span className="text-xs uppercase tracking-[0.3em] text-[#d4af37] font-medium">
             Account Portfolio
           </span>
-          <h1 className="text-3xl sm:text-4xl font-serif tracking-wide text-white mt-2">
+          <h1 className="text-2xl sm:text-4xl font-serif tracking-wide text-white mt-1 sm:mt-2">
             My Orders
           </h1>
-          <p className="text-sm text-white/60 mt-1">
+          <p className="text-xs sm:text-sm text-white/60 mt-1">
             Review your acquisition records, tracking, and purchase order history.
           </p>
         </div>
 
         {error && (
-          <div className="mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-3">
+          <div className="mb-6 sm:mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-3">
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
             <p className="text-sm text-rose-300">{error}</p>
           </div>
         )}
 
         {orders.length === 0 ? (
-          <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-2xl p-8">
-            <Package className="w-12 h-12 text-white/30 mx-auto mb-4" />
-            <h2 className="text-xl font-serif text-white/80 mb-2">No Acquisitions Found</h2>
-            <p className="text-sm text-white/50 mb-6 max-w-sm mx-auto">
+          <div className="text-center py-16 sm:py-20 bg-white/[0.02] border border-white/5 rounded-2xl p-6 sm:p-8">
+            <Package className="w-10 h-10 sm:w-12 sm:h-12 text-white/30 mx-auto mb-3 sm:mb-4" />
+            <h2 className="text-lg sm:text-xl font-serif text-white/80 mb-2">No Acquisitions Found</h2>
+            <p className="text-xs sm:text-sm text-white/50 mb-6 max-w-sm mx-auto">
               You have not placed any orders yet. Discover timeless pieces crafted to perfection.
             </p>
             <Link
               href="/"
-              className="inline-block px-8 py-3 bg-[#d4af37] text-black text-xs uppercase tracking-widest font-semibold rounded-lg hover:bg-[#c29e2e] transition-all"
+              className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-[#d4af37] text-black text-xs uppercase tracking-widest font-semibold rounded-lg hover:bg-[#c29e2e] transition-all"
             >
               Explore Boutique
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {orders.map((order) => (
               <Link
                 key={order.id}
                 href={`/account/orders/${order.order_number}`}
-                className="block group bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-[#d4af37]/40 rounded-2xl p-6 transition-all"
+                className="block group bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-[#d4af37]/40 rounded-2xl p-4 sm:p-6 transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>

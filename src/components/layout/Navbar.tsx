@@ -123,7 +123,7 @@ export default function Navbar() {
               : 'bg-transparent py-5'
         }`}
       >
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 md:px-12 flex items-center justify-between">
           
           {/* Left Navigation Links */}
           <nav
@@ -171,7 +171,7 @@ export default function Navbar() {
             className="flex flex-col items-center group cursor-pointer text-center"
           >
             <span
-              className={`font-serif text-2xl md:text-3xl font-bold tracking-tight transition-colors duration-300 ${
+              className={`font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-tight transition-colors duration-300 ${
                 isDarkHeader
                   ? 'text-white group-hover:text-[#d4af37]'
                   : 'text-charcoal group-hover:text-soft-gold'
@@ -180,7 +180,7 @@ export default function Navbar() {
               VELORA
             </span>
             <span
-              className={`font-tech text-[9px] uppercase tracking-[0.35em] -mt-1 transition-colors ${
+              className={`font-tech text-[8px] sm:text-[9px] uppercase tracking-[0.25em] sm:tracking-[0.35em] -mt-1 transition-colors ${
                 isDarkHeader ? 'text-[#d4af37]/80' : 'text-olive-accent'
               }`}
             >
@@ -189,7 +189,7 @@ export default function Navbar() {
           </Link>
 
           {/* Right Navigation & Interactive Actions */}
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-6">
             <nav
               className={`hidden lg:flex items-center gap-6 xl:gap-8 font-sans text-xs uppercase tracking-widest font-medium transition-colors ${
                 isDarkHeader ? 'text-white/85' : 'text-charcoal/80'
@@ -221,34 +221,34 @@ export default function Navbar() {
               </Link>
             </nav>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-3">
               {/* Search Button */}
               <button
                 aria-label="Search Catalog"
                 onClick={handleSearchClick}
-                className={`p-2 sm:p-2.5 rounded-full transition-all cursor-pointer ${
+                className={`p-1.5 xs:p-2 sm:p-2.5 rounded-full transition-all cursor-pointer ${
                   isDarkHeader
                     ? 'text-white/85 hover:text-[#d4af37] hover:bg-white/10'
                     : 'text-charcoal hover:text-soft-gold hover:bg-white/60'
                 }`}
               >
-                <Search className="w-5 h-5 stroke-[1.75]" />
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
               </button>
 
               {/* Wishlist Button */}
               <button
                 aria-label="View Wishlist"
                 onClick={handleWishlistClick}
-                className={`p-2 sm:p-2.5 rounded-full transition-all relative cursor-pointer ${
+                className={`p-1.5 xs:p-2 sm:p-2.5 rounded-full transition-all relative cursor-pointer ${
                   isDarkHeader
                     ? 'text-white/85 hover:text-[#d4af37] hover:bg-white/10'
                     : 'text-charcoal hover:text-soft-gold hover:bg-white/60'
                 }`}
               >
-                <Heart className="w-5 h-5 stroke-[1.75]" />
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
                 {wishlistCount > 0 && (
                   <span
-                    className={`absolute top-1 right-1 w-4 h-4 text-[9px] font-tech font-bold rounded-full flex items-center justify-center animate-scale-in ${
+                    className={`absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[8px] sm:text-[9px] font-tech font-bold rounded-full flex items-center justify-center animate-scale-in ${
                       isDarkHeader ? 'bg-[#d4af37] text-black' : 'bg-soft-gold text-white'
                     }`}
                   >
@@ -261,16 +261,16 @@ export default function Navbar() {
               <button
                 aria-label="Shopping Cart"
                 onClick={openCart}
-                className={`p-2 sm:p-2.5 rounded-full transition-all relative cursor-pointer ${
+                className={`p-1.5 xs:p-2 sm:p-2.5 rounded-full transition-all relative cursor-pointer ${
                   isDarkHeader
                     ? 'text-white/85 hover:text-[#d4af37] hover:bg-white/10'
                     : 'text-charcoal hover:text-soft-gold hover:bg-white/60'
                 }`}
               >
-                <ShoppingBag className="w-5 h-5 stroke-[1.75]" />
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
                 {cartCount > 0 && (
                   <span
-                    className={`absolute top-1 right-1 w-4 h-4 text-[9px] font-tech font-bold rounded-full flex items-center justify-center animate-scale-in ${
+                    className={`absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[8px] sm:text-[9px] font-tech font-bold rounded-full flex items-center justify-center animate-scale-in ${
                       isDarkHeader ? 'bg-[#d4af37] text-black' : 'bg-navy text-ivory'
                     }`}
                   >
@@ -284,12 +284,13 @@ export default function Navbar() {
                 <div className="relative group/account">
                   <Link
                     href="/account"
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans uppercase tracking-widest font-medium transition-all ${
+                    className={`inline-flex items-center gap-1.5 p-1.5 xs:p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-sans uppercase tracking-widest font-medium transition-all ${
                       isDarkHeader
                         ? 'border border-[#d4af37]/60 text-white hover:text-[#d4af37] hover:border-[#d4af37] hover:bg-[#d4af37]/10'
                         : 'border border-charcoal/25 text-charcoal hover:text-soft-gold hover:border-soft-gold hover:bg-white/60'
                     }`}
                     title={customer.fullName || customer.email || customer.phone || 'Customer Account'}
+                    aria-label="Customer Account"
                   >
                     <User className={`w-3.5 h-3.5 ${isDarkHeader ? 'text-[#d4af37]' : 'text-soft-gold'}`} />
                     <span className="hidden sm:inline font-medium">Account</span>
@@ -322,14 +323,15 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/customer/login"
-                  className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-sans uppercase tracking-widest font-semibold transition-all shadow-sm cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 p-1.5 xs:p-2 sm:px-4 sm:py-2 rounded-full text-xs font-sans uppercase tracking-widest font-semibold transition-all shadow-sm cursor-pointer ${
                     isDarkHeader
                       ? 'bg-[#d4af37] text-black hover:bg-[#e5c158] hover:shadow-lg'
                       : 'bg-navy text-ivory hover:bg-soft-gold hover:text-navy'
                   }`}
+                  aria-label="Customer Login"
                 >
                   <User className="w-3.5 h-3.5" />
-                  <span>Login</span>
+                  <span className="hidden sm:inline">Login</span>
                 </Link>
               )}
 
@@ -337,13 +339,13 @@ export default function Navbar() {
               <button
                 aria-label="Toggle Navigation Menu"
                 onClick={openMobileMenu}
-                className={`lg:hidden p-2 cursor-pointer transition-colors ${
+                className={`lg:hidden p-1.5 xs:p-2 cursor-pointer transition-colors ${
                   isDarkHeader
                     ? 'text-white/90 hover:text-[#d4af37]'
                     : 'text-charcoal hover:text-soft-gold'
                 }`}
               >
-                <Menu className="w-6 h-6 stroke-[1.75]" />
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
               </button>
             </div>
           </div>
@@ -353,7 +355,7 @@ export default function Navbar() {
 
       {/* Fullscreen Mobile Drawer */}
       <div
-        className={`fixed inset-0 z-50 flex flex-col justify-center items-center gap-6 transition-all duration-300 px-6 ${
+        className={`fixed inset-0 z-50 flex flex-col justify-start sm:justify-center items-center gap-5 sm:gap-6 transition-all duration-300 px-6 py-14 sm:py-16 overflow-y-auto max-h-screen ${
           isDarkHeader
             ? 'bg-[#0a0e14]/98 backdrop-blur-2xl text-white'
             : 'bg-ivory/98 backdrop-blur-2xl text-charcoal'
@@ -366,7 +368,7 @@ export default function Navbar() {
         <button
           onClick={closeMobileMenu}
           aria-label="Close Mobile Navigation"
-          className={`absolute top-6 right-6 p-3 cursor-pointer transition-colors ${
+          className={`absolute top-5 right-5 sm:top-6 sm:right-6 p-2.5 sm:p-3 cursor-pointer transition-colors ${
             isDarkHeader ? 'text-white/80 hover:text-[#d4af37]' : 'text-charcoal hover:text-soft-gold'
           }`}
         >

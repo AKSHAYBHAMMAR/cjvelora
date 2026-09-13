@@ -40,33 +40,33 @@ export default function CraftProcess() {
   return (
     <section
       id="process"
-      className="scroll-mt-24 py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/70 rounded-3xl my-12"
+      className="scroll-mt-24 py-12 sm:py-24 px-3.5 sm:px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/70 rounded-2xl sm:rounded-3xl my-6 sm:my-12"
     >
-      <div className="text-center max-w-3xl mx-auto mb-20 space-y-3">
+      <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-20 space-y-2 sm:space-y-3">
         <span className="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block font-medium">
           Step-by-step Artistry
         </span>
-        <h2 className="font-serif text-3xl md:text-5xl font-semibold text-charcoal tracking-tight">
+        <h2 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-charcoal tracking-tight">
           Our Crafting Process
         </h2>
-        <p className="font-serif italic text-lg md:text-xl text-olive-accent font-normal">
+        <p className="font-serif italic text-sm sm:text-base md:text-xl text-olive-accent font-normal">
           From raw organic thread selection to your doorstep
         </p>
       </div>
 
       {/* 5-Step Horizontal Timeline */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6 relative">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 sm:gap-6 relative">
         {STEPS.map((s, idx) => (
           <div
             key={idx}
-            className="glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 bg-white/80"
+            className="glass-card p-4 sm:p-6 rounded-2xl sm:rounded-3xl flex flex-col items-center text-center space-y-3 sm:space-y-4 bg-white/80"
           >
             <span className="font-tech text-xs text-soft-gold uppercase tracking-widest font-semibold">
               {s.step}
             </span>
 
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center font-serif text-lg font-bold shadow-md ${
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-serif text-base sm:text-lg font-bold shadow-md ${
                 s.isGold
                   ? 'bg-soft-gold text-navy'
                   : 'bg-navy text-ivory'
@@ -75,7 +75,7 @@ export default function CraftProcess() {
               {s.num}
             </div>
 
-            <h3 className="font-serif text-lg font-semibold text-charcoal">
+            <h3 className="font-serif text-base sm:text-lg font-semibold text-charcoal">
               {s.title}
             </h3>
 

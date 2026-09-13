@@ -80,12 +80,12 @@ function CustomerLoginForm() {
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
       </Link>
 
-      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 sm:p-9 shadow-2xl">
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 sm:p-9 shadow-2xl">
         {/* Brand Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
-          <h1 className="font-serif text-3xl mt-2 text-white">Client Portal</h1>
-          <p className="text-sm text-white/50 mt-2.5">Sign in to your private customer account.</p>
+          <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Client Portal</h1>
+          <p className="text-xs sm:text-sm text-white/50 mt-2">Sign in to your private customer account.</p>
         </div>
 
         {error && (

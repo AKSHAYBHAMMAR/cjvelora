@@ -32,28 +32,28 @@ export default function CartDrawer() {
       />
 
       {/* Slide-out Drawer Panel */}
-      <div className="relative w-full max-w-md h-full bg-ivory shadow-2xl p-6 sm:p-8 flex flex-col justify-between z-10 overflow-y-auto animate-slide-in-right">
+      <div className="relative w-full max-w-md h-full bg-ivory shadow-2xl p-4 sm:p-8 flex flex-col justify-between z-10 overflow-y-auto animate-slide-in-right">
         
         {/* Header */}
         <div>
-          <div className="flex items-center justify-between pb-6 border-b border-charcoal/10">
+          <div className="flex items-center justify-between pb-4 sm:pb-6 border-b border-charcoal/10">
             <div className="flex items-center gap-2.5">
               <ShoppingBag className="w-5 h-5 text-navy" />
-              <h3 className="font-serif text-xl font-semibold text-charcoal">
+              <h3 className="font-serif text-lg sm:text-xl font-semibold text-charcoal">
                 Your Atelier Bag
               </h3>
             </div>
             <button
               onClick={closeCart}
               aria-label="Close Shopping Bag"
-              className="p-2 text-charcoal hover:text-soft-gold transition-colors cursor-pointer rounded-full hover:bg-white/60"
+              className="p-1.5 sm:p-2 text-charcoal hover:text-soft-gold transition-colors cursor-pointer rounded-full hover:bg-white/60"
             >
               <X className="w-5 h-5 stroke-[1.75]" />
             </button>
           </div>
 
           {/* Items List */}
-          <div className="py-6 space-y-5">
+          <div className="py-4 sm:py-6 space-y-3 sm:space-y-5">
             {cart.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
                 <div className="w-14 h-14 rounded-full bg-beige flex items-center justify-center text-charcoal/40">
@@ -74,19 +74,19 @@ export default function CartDrawer() {
               cart.map((item) => (
                 <div
                   key={item.product.id}
-                  className="flex gap-4 items-center bg-white/70 p-3.5 rounded-2xl border border-white shadow-sm"
+                  className="flex gap-2.5 sm:gap-4 items-center bg-white/70 p-2.5 sm:p-3.5 rounded-2xl border border-white shadow-sm"
                 >
                   <img
                     src={item.product.images[0]}
                     alt={item.product.name}
-                    className="w-16 h-16 object-cover rounded-xl shrink-0 bg-beige/60"
+                    className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl shrink-0 bg-beige/60"
                   />
                   <div className="flex-grow min-w-0">
-                    <h4 className="font-serif text-sm font-semibold text-charcoal truncate">
+                    <h4 className="font-serif text-xs sm:text-sm font-semibold text-charcoal truncate">
                       {item.product.name}
                     </h4>
                     {item.selectedColor && (
-                      <span className="font-tech text-[10px] text-olive-accent block">
+                      <span className="font-tech text-[9px] sm:text-[10px] text-olive-accent block truncate">
                         {item.selectedColor}
                       </span>
                     )}
@@ -96,23 +96,23 @@ export default function CartDrawer() {
                   </div>
 
                   {/* Quantity Controls */}
-                  <div className="flex items-center gap-2 border border-charcoal/15 bg-white rounded-lg px-2 py-1 shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2 border border-charcoal/15 bg-white rounded-lg px-1.5 sm:px-2 py-1 shrink-0">
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      className="text-xs text-charcoal hover:text-soft-gold font-bold px-1"
+                      className="text-xs text-charcoal hover:text-soft-gold font-bold px-0.5 sm:px-1"
                       aria-label="Decrease quantity"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     </button>
-                    <span className="text-xs font-tech font-semibold min-w-[14px] text-center">
+                    <span className="text-xs font-tech font-semibold min-w-[12px] sm:min-w-[14px] text-center">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      className="text-xs text-charcoal hover:text-soft-gold font-bold px-1"
+                      className="text-xs text-charcoal hover:text-soft-gold font-bold px-0.5 sm:px-1"
                       aria-label="Increase quantity"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     </button>
                   </div>
 
@@ -120,9 +120,9 @@ export default function CartDrawer() {
                   <button
                     onClick={() => removeFromCart(item.product.id)}
                     aria-label={`Remove ${item.product.name}`}
-                    className="text-charcoal/40 hover:text-rose-500 p-1 transition-colors"
+                    className="text-charcoal/40 hover:text-rose-500 p-1 transition-colors shrink-0"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               ))
@@ -132,10 +132,10 @@ export default function CartDrawer() {
 
         {/* Footer Checkout Summary */}
         {cart.length > 0 && (
-          <div className="pt-6 border-t border-charcoal/10 space-y-4">
-            <div className="flex justify-between items-center font-serif text-lg font-semibold text-charcoal">
+          <div className="pt-4 sm:pt-6 border-t border-charcoal/10 space-y-3 sm:space-y-4">
+            <div className="flex justify-between items-center font-serif text-base sm:text-lg font-semibold text-charcoal">
               <span>Subtotal</span>
-              <span className="font-tech text-xl text-navy font-bold">
+              <span className="font-tech text-lg sm:text-xl text-navy font-bold">
                 ₹{total.toLocaleString('en-IN')}
               </span>
             </div>
@@ -145,7 +145,7 @@ export default function CartDrawer() {
             <Link
               href="/checkout"
               onClick={closeCart}
-              className="w-full bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-md font-semibold flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-3.5 sm:py-4 rounded-xl hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-md font-semibold flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Proceed to Luxury Checkout</span>
               <ArrowRight className="w-4 h-4" />

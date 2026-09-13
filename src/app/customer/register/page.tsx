@@ -101,7 +101,7 @@ function CustomerRegisterForm() {
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
       </Link>
 
-      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 sm:p-9 shadow-2xl">
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 sm:p-9 shadow-2xl">
         {needsVerification ? (
           <EmailVerificationNotice
             email={email}
@@ -112,8 +112,8 @@ function CustomerRegisterForm() {
           <div>
             <div className="text-center mb-6">
               <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
-              <h1 className="font-serif text-3xl mt-2 text-white">Phone Sign Up</h1>
-              <p className="text-sm text-white/50 mt-2">Instant, passwordless registration via SMS.</p>
+              <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Phone Sign Up</h1>
+              <p className="text-xs sm:text-sm text-white/50 mt-1.5 sm:mt-2">Instant, passwordless registration via SMS.</p>
             </div>
             <PhoneAuthFlow
               nextUrl={next}
@@ -125,8 +125,8 @@ function CustomerRegisterForm() {
             {/* Header */}
             <div className="text-center mb-6">
               <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
-              <h1 className="font-serif text-3xl mt-2 text-white">Create Account</h1>
-              <p className="text-sm text-white/50 mt-2">Join our private clientele for bespoke crochet luxury.</p>
+              <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Create Account</h1>
+              <p className="text-xs sm:text-sm text-white/50 mt-1.5 sm:mt-2">Join our private clientele for bespoke crochet luxury.</p>
             </div>
 
             {error && (

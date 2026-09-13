@@ -230,43 +230,44 @@ function loadRazorpayScript(): Promise<boolean> {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-3.5 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10 gap-2">
           <Link
             href="/"
-            className="flex items-center text-xs tracking-widest uppercase text-white/60 hover:text-[#d4af37] transition-colors"
+            className="flex items-center text-xs tracking-widest uppercase text-white/60 hover:text-[#d4af37] transition-colors shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
+            <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" /> Back to Boutique
           </Link>
-          <div className="flex items-center space-x-2 text-xs text-white/50 tracking-wider uppercase">
-            <Lock className="w-3.5 h-3.5 text-[#d4af37]" />
-            <span>256-Bit SSL Encrypted Checkout</span>
+          <div className="flex items-center space-x-1.5 text-[10px] sm:text-xs text-white/50 tracking-wider uppercase shrink-0">
+            <Lock className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+            <span className="hidden xs:inline">256-Bit SSL Encrypted</span>
+            <span className="xs:hidden">SSL Secure</span>
           </div>
         </div>
 
-        <div className="mb-10 text-center">
+        <div className="mb-8 sm:mb-10 text-center">
           <span className="text-xs uppercase tracking-[0.3em] text-[#d4af37] font-medium">
             Velora Haute Joaillerie
           </span>
-          <h1 className="text-3xl sm:text-4xl font-serif tracking-wide text-white mt-2">
+          <h1 className="text-2xl sm:text-4xl font-serif tracking-wide text-white mt-1 sm:mt-2">
             Secure Checkout
           </h1>
         </div>
 
         {/* Authentication Notice for Guests */}
         {!user && (
-          <div className="mb-8 p-4 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-between">
+          <div className="mb-6 sm:mb-8 p-4 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-[#d4af37] flex-shrink-0" />
-              <p className="text-sm text-white/90">
+              <p className="text-xs sm:text-sm text-white/90">
                 You are currently not signed in. An authenticated account is required to secure your order.
               </p>
             </div>
             <Link
               href="/customer/login?next=/checkout"
-              className="px-4 py-2 bg-[#d4af37] text-black text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#e5c158] transition-all whitespace-nowrap ml-4"
+              className="px-4 py-2 bg-[#d4af37] text-black text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#e5c158] transition-all whitespace-nowrap self-end xs:self-auto"
             >
               Sign In
             </Link>
@@ -294,25 +295,25 @@ function loadRazorpayScript(): Promise<boolean> {
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
             {/* Left: Customer Info & Shipping Address */}
-            <div className="lg:col-span-7 space-y-8">
+            <div className="lg:col-span-7 space-y-6 sm:space-y-8">
               {/* Customer Contact */}
-              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
-                  <h2 className="text-lg font-serif tracking-wide text-white">
+              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-8 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-white/5">
+                  <h2 className="text-base sm:text-lg font-serif tracking-wide text-white">
                     1. Contact Information
                   </h2>
                   {user && (
-                    <span className="text-xs text-white/40 tracking-wider">
-                      Signed in as {user.email}
+                    <span className="text-[11px] sm:text-xs text-white/40 tracking-wider truncate max-w-[140px] sm:max-w-none">
+                      {user.email}
                     </span>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                    <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                       Full Name *
                     </label>
                     <input
@@ -322,11 +323,11 @@ function loadRazorpayScript(): Promise<boolean> {
                       value={formData.fullName}
                       onChange={handleInputChange}
                       placeholder="e.g. Lord Alistair Vance"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                    <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                       Email Address *
                     </label>
                     <input
@@ -337,13 +338,13 @@ function loadRazorpayScript(): Promise<boolean> {
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="client@velora.com"
-                      className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors ${
+                      className={`w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors ${
                         user?.email ? 'opacity-80 cursor-not-allowed' : ''
                       }`}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                    <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                       Phone Number *
                     </label>
                     <input
@@ -353,24 +354,24 @@ function loadRazorpayScript(): Promise<boolean> {
                       value={formData.phone}
                       onChange={handleInputChange}
                       placeholder="+91 98765 43210"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Shipping Address */}
-              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
-                  <h2 className="text-lg font-serif tracking-wide text-white">
+              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-8 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-white/5">
+                  <h2 className="text-base sm:text-lg font-serif tracking-wide text-white">
                     2. Luxury White-Glove Delivery Address
                   </h2>
                   <Truck className="w-4 h-4 text-[#d4af37]" />
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                    <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                       Address Line *
                     </label>
                     <input
@@ -380,13 +381,13 @@ function loadRazorpayScript(): Promise<boolean> {
                       value={formData.addressLine1}
                       onChange={handleInputChange}
                       placeholder="Apartment, Suite, Unit, Street Address"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                      <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                         City *
                       </label>
                       <input
@@ -396,11 +397,11 @@ function loadRazorpayScript(): Promise<boolean> {
                         value={formData.city}
                         onChange={handleInputChange}
                         placeholder="Mumbai"
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                        className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                      <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                         State *
                       </label>
                       <input
@@ -410,11 +411,11 @@ function loadRazorpayScript(): Promise<boolean> {
                         value={formData.state}
                         onChange={handleInputChange}
                         placeholder="Maharashtra"
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                        className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                      <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                         PIN Code *
                       </label>
                       <input
@@ -424,13 +425,13 @@ function loadRazorpayScript(): Promise<boolean> {
                         value={formData.postalCode}
                         onChange={handleInputChange}
                         placeholder="400001"
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                        className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
+                    <label className="block text-[11px] sm:text-xs uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2">
                       Country
                     </label>
                     <input
@@ -438,29 +439,29 @@ function loadRazorpayScript(): Promise<boolean> {
                       name="country"
                       disabled
                       value={formData.country}
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 text-sm cursor-not-allowed"
+                      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 text-sm cursor-not-allowed"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Planned Payment Method */}
-              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-8 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
-                  <h2 className="text-lg font-serif tracking-wide text-white">
+                  <h2 className="text-base sm:text-lg font-serif tracking-wide text-white">
                     3. Payment Architecture
                   </h2>
                   <CreditCard className="w-4 h-4 text-[#d4af37]" />
                 </div>
 
-                <div className="p-4 rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/5 flex items-start space-x-3">
-                  <div className="p-2 bg-[#d4af37]/10 rounded-lg text-[#d4af37] mt-0.5">
+                <div className="p-3.5 sm:p-4 rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/5 flex flex-col xs:flex-row items-start xs:items-center gap-3">
+                  <div className="p-2 bg-[#d4af37]/10 rounded-lg text-[#d4af37] shrink-0">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-white">Razorpay Secure Online Payment</span>
-                      <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 bg-[#d4af37] text-black rounded">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs sm:text-sm font-semibold text-white">Razorpay Secure Online Payment</span>
+                      <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-[#d4af37] text-black rounded">
                         UPI • Cards • NetBanking
                       </span>
                     </div>
@@ -474,7 +475,7 @@ function loadRazorpayScript(): Promise<boolean> {
 
             {/* Right: Order Summary */}
             <div className="lg:col-span-5">
-              <div className="sticky top-28 bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+              <div className="sticky top-28 bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-8 backdrop-blur-sm">
                 <h2 className="text-lg font-serif tracking-wide text-white mb-6 pb-4 border-b border-white/5">
                   Bag Summary ({cart.reduce((a, b) => a + b.quantity, 0)} Items)
                 </h2>

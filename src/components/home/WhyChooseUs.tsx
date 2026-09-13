@@ -60,35 +60,35 @@ const FEATURES = [
 
 export default function WhyChooseUs() {
   return (
-    <section className="py-24 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
+    <section className="py-12 sm:py-24 px-3.5 sm:px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto">
       
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+      <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-16 space-y-2 sm:space-y-3">
         <span className="font-tech text-xs uppercase tracking-[0.3em] text-olive-accent block font-medium">
           Uncompromising Quality
         </span>
-        <h2 className="font-serif text-3xl md:text-5xl font-semibold text-charcoal tracking-tight">
+        <h2 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-charcoal tracking-tight">
           Why Choose VELORA
         </h2>
       </div>
 
       {/* 7 Feature Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {FEATURES.map((item, idx) => {
           const Icon = item.icon;
           return (
             <div
               key={idx}
-              className={`glass-card p-8 rounded-3xl flex flex-col space-y-4 border border-white bg-white/80 ${
+              className={`glass-card p-5 sm:p-8 rounded-2xl sm:rounded-3xl flex flex-col space-y-3 sm:space-y-4 border border-white bg-white/80 ${
                 item.spanTwo ? 'lg:col-span-2' : ''
               }`}
             >
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center ${item.color}`}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center ${item.color}`}
               >
-                <Icon className="w-7 h-7 stroke-[1.75]" />
+                <Icon className="w-6 h-6 sm:w-7 sm:h-7 stroke-[1.75]" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-charcoal">
+              <h3 className="font-serif text-lg sm:text-xl font-semibold text-charcoal">
                 {item.title}
               </h3>
               <p className="font-sans text-xs text-charcoal/70 leading-relaxed">

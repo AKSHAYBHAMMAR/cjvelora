@@ -34,24 +34,24 @@ export default function MostLovedSection() {
   }, []);
 
   return (
-    <section id="most-loved" className="py-20 px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/60 rounded-3xl my-6 border border-white/60">
+    <section id="most-loved" className="py-10 sm:py-20 px-3.5 sm:px-6 md:px-12 lg:px-20 max-w-[1600px] mx-auto bg-warm-white/60 rounded-2xl sm:rounded-3xl my-6 border border-white/60">
       
       {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-14 gap-4 sm:gap-6">
         <div>
-          <div className="inline-flex items-center gap-2 mb-2 px-3.5 py-1 rounded-full glass-panel border border-rose-300/40">
+          <div className="inline-flex items-center gap-2 mb-2 px-3 sm:px-3.5 py-1 rounded-full glass-panel border border-rose-300/40">
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-            <span className="font-tech text-[10px] uppercase tracking-[0.3em] text-rose-900 font-semibold">
+            <span className="font-tech text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-rose-900 font-semibold">
               Community Favorites
             </span>
           </div>
 
-          <h2 className="font-serif text-3xl md:text-5xl font-semibold text-charcoal tracking-tight flex items-center gap-3">
+          <h2 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-charcoal tracking-tight flex items-center gap-2 sm:gap-3">
             <span>Most Loved by You</span>
-            <span className="text-rose-500 text-3xl md:text-4xl animate-pulse">❤️</span>
+            <span className="text-rose-500 text-2xl sm:text-3xl md:text-4xl animate-pulse">❤️</span>
           </h2>
 
-          <p className="font-serif italic text-base md:text-lg text-olive-accent font-light mt-1">
+          <p className="font-serif italic text-sm sm:text-base md:text-lg text-olive-accent font-light mt-1">
             Our most cherished handcrafted creations, looped with intentional love and adored across homes worldwide.
           </p>
         </div>
@@ -63,8 +63,8 @@ export default function MostLovedSection() {
         </div>
       </div>
 
-      {/* 5-6 Most Loved Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Most Loved Products Grid (2 cols mobile, 3 cols desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
         {mostLovedProducts.map((product) => (
           <ProductCard
             key={product.id}

@@ -28,7 +28,7 @@ export default function QuickViewModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 xs:p-4">
       {/* Backdrop */}
       <div
         onClick={closeQuickView}
@@ -37,47 +37,47 @@ export default function QuickViewModal() {
       />
 
       {/* Modal Dialog */}
-      <div className="relative glass-card max-w-3xl w-full p-6 sm:p-8 rounded-3xl border border-white z-10 bg-ivory shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="relative glass-card max-w-3xl w-full p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-white z-10 bg-ivory shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         <button
           onClick={closeQuickView}
           aria-label="Close Quick View"
-          className="absolute top-6 right-6 p-2 text-charcoal hover:text-soft-gold transition-colors rounded-full hover:bg-white/80 cursor-pointer z-10"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 p-1.5 sm:p-2 text-charcoal hover:text-soft-gold transition-colors rounded-full hover:bg-white/80 cursor-pointer z-10"
         >
-          <X className="w-6 h-6 stroke-[1.5]" />
+          <X className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" />
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 items-center">
           
           {/* Image */}
-          <div className="relative h-72 sm:h-96 w-full rounded-2xl overflow-hidden bg-beige/60">
+          <div className="relative h-56 xs:h-64 sm:h-96 w-full rounded-xl sm:rounded-2xl overflow-hidden bg-beige/60">
             <img
               src={quickViewProduct.images[0]}
               alt={quickViewProduct.name}
               className="w-full h-full object-cover"
             />
             {quickViewProduct.badge && (
-              <span className="absolute top-4 left-4 font-tech text-[10px] uppercase tracking-wider bg-navy/90 text-ivory backdrop-blur-md px-3 py-1 rounded-full font-medium shadow-sm">
+              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 font-tech text-[9px] sm:text-[10px] uppercase tracking-wider bg-navy/90 text-ivory backdrop-blur-md px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full font-medium shadow-sm">
                 {quickViewProduct.badge}
               </span>
             )}
           </div>
 
           {/* Details */}
-          <div className="space-y-4">
-            <span className="font-tech text-[10px] uppercase text-olive-accent tracking-[0.25em] font-medium">
+          <div className="space-y-3 sm:space-y-4">
+            <span className="font-tech text-[9px] sm:text-[10px] uppercase text-olive-accent tracking-[0.2em] sm:tracking-[0.25em] font-medium">
               {quickViewProduct.category}
             </span>
 
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal leading-snug">
+            <h3 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-charcoal leading-snug">
               {quickViewProduct.name}
             </h3>
 
-            <div className="flex items-baseline gap-3">
-              <span className="font-tech text-2xl font-bold text-navy">
+            <div className="flex items-baseline gap-2 sm:gap-3">
+              <span className="font-tech text-xl sm:text-2xl font-bold text-navy">
                 ₹{quickViewProduct.price.toLocaleString('en-IN')}
               </span>
               {quickViewProduct.originalPrice && (
-                <span className="font-tech text-sm text-charcoal/40 line-through">
+                <span className="font-tech text-xs sm:text-sm text-charcoal/40 line-through">
                   ₹{quickViewProduct.originalPrice.toLocaleString('en-IN')}
                 </span>
               )}
@@ -88,7 +88,7 @@ export default function QuickViewModal() {
             </p>
 
             {/* Materials & Lead Time */}
-            <div className="py-2 space-y-1.5 text-xs text-charcoal/80 border-t border-b border-charcoal/10 font-sans">
+            <div className="py-2 space-y-1 sm:space-y-1.5 text-xs text-charcoal/80 border-t border-b border-charcoal/10 font-sans">
               <p>
                 <strong className="font-medium text-charcoal">Materials:</strong>{' '}
                 {quickViewProduct.materials}
@@ -109,15 +109,15 @@ export default function QuickViewModal() {
             {/* Color Variant Selector */}
             {quickViewProduct.colors && quickViewProduct.colors.length > 0 && (
               <div>
-                <label className="font-tech text-[10px] uppercase tracking-wider text-olive-accent block mb-2 font-medium">
+                <label className="font-tech text-[9px] sm:text-[10px] uppercase tracking-wider text-olive-accent block mb-1.5 font-medium">
                   Select Shade: {currentColor}
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {quickViewProduct.colors.map((col) => (
                     <button
                       key={col}
                       onClick={() => setSelectedColor(col)}
-                      className={`text-xs px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                      className={`text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border transition-all cursor-pointer ${
                         currentColor === col
                           ? 'border-navy bg-navy text-ivory font-semibold'
                           : 'border-charcoal/20 bg-white/70 text-charcoal hover:border-soft-gold'
@@ -131,10 +131,10 @@ export default function QuickViewModal() {
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 pt-2 sm:pt-3">
               <button
                 onClick={handleAdd}
-                className="flex-grow bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl hover:bg-soft-gold hover:text-navy transition-all duration-300 font-semibold flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                className="flex-grow bg-navy text-ivory font-sans text-xs uppercase tracking-widest py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl hover:bg-soft-gold hover:text-navy transition-all duration-300 font-semibold flex items-center justify-center gap-2 shadow-md cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4" />
                 <span>Add to Atelier Bag</span>
@@ -143,10 +143,10 @@ export default function QuickViewModal() {
               <button
                 onClick={() => toggleWishlist(quickViewProduct)}
                 aria-label="Toggle Wishlist"
-                className="p-3 rounded-xl border border-charcoal/20 bg-white text-charcoal hover:text-rose-500 transition-colors cursor-pointer"
+                className="p-2.5 sm:p-3 rounded-xl border border-charcoal/20 bg-white text-charcoal hover:text-rose-500 transition-colors cursor-pointer"
               >
                 <Heart
-                  className={`w-5 h-5 ${
+                  className={`w-4 h-4 sm:w-5 sm:h-5 ${
                     inWish ? 'fill-rose-500 text-rose-500' : 'text-charcoal stroke-[1.75]'
                   }`}
                 />
