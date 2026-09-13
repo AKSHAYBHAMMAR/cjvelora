@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       product_name: item.productName,
       unit_price: item.unitPrice,
       quantity: item.quantity,
-      total_price: item.lineTotal,
+      line_total: item.lineTotal,
     }));
 
     const { error: orderItemsError } = await userSupabase.from('order_items').insert(orderItems);
