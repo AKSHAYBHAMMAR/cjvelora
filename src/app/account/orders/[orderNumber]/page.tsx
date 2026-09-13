@@ -122,7 +122,15 @@ export default function CustomerOrderDetailPage() {
     );
   }
 
-  const shipping = order.shipping_address || {};
+  const shippingName = order.shipping_name || order.customer_name || 'Recipient';
+  const addressLine1 = order.shipping_address_line1 || (typeof order.shipping_address === 'string' ? order.shipping_address : '') || '';
+  const city = order.shipping_city || '';
+  const state = order.shipping_state || '';
+  const postalCode = order.shipping_postal_code || '';
+  const country = order.shipping_country || 'India';
+  const phone = order.shipping_phone || order.customer_phone || '';
+  const displayStatus = order.order_status || order.status || 'pending';
+  const discountVal = Number(order.discount_amount ?? order.discount ?? 0);
 
   return (
     <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
@@ -163,14 +171,14 @@ export default function CustomerOrderDetailPage() {
           <div className="flex items-center space-x-3">
             <span
               className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
-                order.status === 'completed'
+                displayStatus === 'completed' || displayStatus === 'delivered'
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : order.status === 'cancelled'
+                  : displayStatus === 'cancelled' || displayStatus === 'refunded'
                   ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                   : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
               }`}
             >
-              Order: {order.status}
+              Order: {displayStatus}
             </span>
             <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/10 text-white/80 border border-white/10">
               Payment: {order.payment_status}
@@ -189,23 +197,28 @@ export default function CustomerOrderDetailPage() {
               </h2>
 
               <div className="divide-y divide-white/5">
-                {orderItems.map((item) => (
-                  <div key={item.id} className="py-4 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-serif text-white font-medium">
-                        {item.product_name}
-                      </h3>
-                      <p className="text-xs text-white/40 mt-1">
-                        Historical Unit Price: ₹{Number(item.unit_price).toLocaleString('en-IN')} × Qty {item.quantity}
-                      </p>
+                {orderItems.map((item) => {
+                  const itemSubtotal = Number(
+                    item.subtotal ?? item.line_total ?? item.total_price ?? (Number(item.unit_price) * item.quantity)
+                  );
+                  return (
+                    <div key={item.id} className="py-4 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-serif text-white font-medium">
+                          {item.product_name}
+                        </h3>
+                        <p className="text-xs text-white/40 mt-1">
+                          Historical Unit Price: ₹{Number(item.unit_price).toLocaleString('en-IN')} × Qty {item.quantity}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-[#d4af37]">
+                          ₹{itemSubtotal.toLocaleString('en-IN')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-[#d4af37]">
-                        ₹{Number(item.subtotal).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Price Calculation Summary */}
@@ -218,10 +231,10 @@ export default function CustomerOrderDetailPage() {
                   <span>Insured Courier</span>
                   <span className="text-emerald-400">Complimentary</span>
                 </div>
-                {order.discount_amount > 0 && (
+                {discountVal > 0 && (
                   <div className="flex justify-between text-emerald-400">
                     <span>Discount</span>
-                    <span>-₹{Number(order.discount_amount).toLocaleString('en-IN')}</span>
+                    <span>-₹{discountVal.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-bold text-white pt-3 border-t border-white/10">
@@ -242,13 +255,16 @@ export default function CustomerOrderDetailPage() {
                 <Truck className="w-4 h-4 mr-2 text-[#d4af37]" /> Delivery Destination
               </h2>
               <div className="text-xs text-white/80 space-y-1">
-                <p className="font-semibold text-white">{shipping.fullName || 'Recipient'}</p>
-                <p>{shipping.addressLine1}</p>
-                <p>
-                  {shipping.city}, {shipping.state} — {shipping.postalCode}
-                </p>
-                <p className="text-white/50">{shipping.country || 'India'}</p>
-                <p className="text-white/60 pt-2">Contact: {shipping.phone}</p>
+                <p className="font-semibold text-white">{shippingName}</p>
+                {addressLine1 && <p>{addressLine1}</p>}
+                {(city || state || postalCode) && (
+                  <p>
+                    {[city, state].filter(Boolean).join(', ')}
+                    {postalCode ? ` — ${postalCode}` : ''}
+                  </p>
+                )}
+                <p className="text-white/50">{country}</p>
+                {phone && <p className="text-white/60 pt-2">Contact: {phone}</p>}
               </div>
             </div>
 

@@ -73,6 +73,20 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -129,9 +143,77 @@ export default function CheckoutPage() {
         throw new Error(result.error || 'Failed to place order. Please try again.');
       }
 
-      // Order created successfully
-      clearCart();
-      router.push(`/order-success/${result.orderNumber}`);
+      // Live Razorpay payment gateway handling
+      if (result.razorpayConfigured && result.razorpayOrderId && result.razorpayKeyId) {
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          throw new Error('Failed to connect with secure payment gateway. Please check your network connection.');
+        }
+
+        const options = {
+          key: result.razorpayKeyId,
+          amount: result.amountInPaise,
+          currency: result.currency || 'INR',
+          name: 'Velora Haute Joaillerie',
+          description: `Order Reference #${result.orderNumber}`,
+          order_id: result.razorpayOrderId,
+          prefill: {
+            name: formData.fullName.trim(),
+            email: (formData.email || session.user.email || '').trim(),
+            contact: (formData.phone || session.user.phone || '').trim(),
+          },
+          theme: {
+            color: '#d4af37',
+          },
+          handler: async function (paymentResponse: any) {
+            try {
+              const verifyRes = await fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  orderId: result.orderId,
+                  razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok || !verifyData.success) {
+                throw new Error(verifyData.error || 'Payment signature verification failed.');
+              }
+
+              clearCart();
+              router.push(`/order-success/${result.orderNumber}`);
+            } catch (vErr: any) {
+              console.error('Payment verification error:', vErr);
+              setError(vErr.message || 'Payment confirmation could not be verified.');
+              setSubmitting(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setSubmitting(false);
+              setError('Payment window closed. Your items remain in your bag.');
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          console.error('Razorpay payment failed:', resp.error);
+          setError(`Payment failed: ${resp.error?.description || 'Transaction declined.'}`);
+          setSubmitting(false);
+        });
+        rzp.open();
+      } else {
+        // Fallback when Razorpay credentials are not yet entered in environment
+        clearCart();
+        router.push(`/order-success/${result.orderNumber}`);
+      }
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'An unexpected error occurred during checkout.');
@@ -379,11 +461,11 @@ export default function CheckoutPage() {
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-semibold text-white">Razorpay Secure Online Payment</span>
                       <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 bg-[#d4af37] text-black rounded">
-                        Next Stage Ready
+                        UPI • Cards • NetBanking
                       </span>
                     </div>
                     <p className="text-xs text-white/60 mt-1 leading-relaxed">
-                      In this Step 13 foundation stage, your order is cryptographically verified and recorded with pending payment status. Direct Razorpay checkout integration will be initiated in the next stage without modifying database totals.
+                      Transactions are protected by 256-bit bank-grade encryption with instant cryptographic signature verification upon capture.
                     </p>
                   </div>
                 </div>

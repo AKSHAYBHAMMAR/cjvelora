@@ -898,7 +898,7 @@ export default function AdminOrdersPage() {
                   )}
                   {!selectedOrder.razorpayOrderId && !selectedOrder.razorpayPaymentId && (
                     <p className="text-ivory/40 italic font-sans text-[11px]">
-                      Live Razorpay payment credentials and webhooks will be connected in Step 13.
+                      No online transaction ID recorded for this order (pending payment capture).
                     </p>
                   )}
                 </div>

@@ -32,9 +32,14 @@ export function isValidStatusTransition(current: OrderStatus, next: OrderStatus)
 export function mapSupabaseOrderItem(row: any): AdminOrderItem {
   const qty = Number(row.quantity ?? 1);
   const price = Number(row.unit_price ?? row.price ?? 0);
-  const total = row.line_total !== undefined && row.line_total !== null
-    ? Number(row.line_total)
-    : qty * price;
+  const total =
+    row.subtotal !== undefined && row.subtotal !== null
+      ? Number(row.subtotal)
+      : row.line_total !== undefined && row.line_total !== null
+      ? Number(row.line_total)
+      : row.total_price !== undefined && row.total_price !== null
+      ? Number(row.total_price)
+      : qty * price;
 
   return {
     id: String(row.id || ''),
@@ -43,6 +48,7 @@ export function mapSupabaseOrderItem(row: any): AdminOrderItem {
     productName: String(row.product_name || row.name || 'Handcrafted Creation'),
     quantity: qty,
     unitPrice: price,
+    subtotal: total,
     lineTotal: total,
     productImage: row.product_image || row.image_url || row.image || undefined,
     createdAt: row.created_at,
@@ -68,7 +74,7 @@ export function mapSupabaseOrder(row: any, items: any[] = []): AdminOrder {
       `VEL-${String(row.id).slice(0, 8).toUpperCase()}`
     ),
     createdAt: row.created_at || new Date().toISOString(),
-    orderStatus: (String(row.status || row.order_status || 'pending').toLowerCase()) as OrderStatus,
+    orderStatus: (String(row.order_status || row.status || 'pending').toLowerCase()) as OrderStatus,
     paymentStatus: (String(row.payment_status || row.paymentStatus || 'pending').toLowerCase()) as PaymentStatus,
     paymentMethod: String(row.payment_method || row.paymentMethod || 'Razorpay'),
 
@@ -77,12 +83,13 @@ export function mapSupabaseOrder(row: any, items: any[] = []): AdminOrder {
     customerPhone: row.customer_phone || row.phone || undefined,
 
     shippingName: row.shipping_name || row.customer_name || undefined,
-    shippingAddress: row.shipping_address || row.address || undefined,
+    shippingAddress: row.shipping_address || row.shipping_address_line1 || row.address || undefined,
+    shippingAddressLine1: row.shipping_address_line1 || row.shipping_address || undefined,
     shippingCity: row.shipping_city || row.city || undefined,
     shippingState: row.shipping_state || row.state || undefined,
     shippingPostalCode: row.shipping_postal_code || row.postal_code || row.zip || undefined,
     shippingCountry: row.shipping_country || row.country || 'India',
-    shippingPhone: row.shipping_phone || row.phone || undefined,
+    shippingPhone: row.shipping_phone || row.customer_phone || row.phone || undefined,
 
     subtotal: Number(subtotal),
     discount: Number(discount),
@@ -183,9 +190,15 @@ export async function updateOrderStatus(params: {
   adminProfile?: { id: string; email: string; role: string } | null;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
     const res = await fetch('/api/admin/orders/status', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(params),
     });
 

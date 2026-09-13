@@ -180,7 +180,28 @@ export async function adjustStock(params: {
 
     const { productId, delta, reason, adminProfile, productName } = params;
 
-    // 1. Validation
+    // In client-side context, route through the secure admin API endpoint with JWT
+    if (typeof window !== 'undefined') {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch('/api/admin/inventory/adjust', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ productId, delta, reason, productName }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Failed to adjust stock.' };
+      }
+      return { success: true, updatedItem: data.updatedItem };
+    }
+
+    // Server-side fallback execution
     if (!productId) {
       return { success: false, error: 'Product ID is required.' };
     }
@@ -191,7 +212,6 @@ export async function adjustStock(params: {
       return { success: false, error: 'Adjustment reason or note is required.' };
     }
 
-    // 2. Fetch current inventory row
     const { data: current, error: fetchErr } = await supabase
       .from('inventory')
       .select('*')
@@ -205,7 +225,6 @@ export async function adjustStock(params: {
     const currentQuantity = typeof current.quantity === 'number' ? current.quantity : 0;
     const newQuantity = currentQuantity + delta;
 
-    // 3. Prevent negative stock
     if (newQuantity < 0) {
       return {
         success: false,
@@ -213,7 +232,6 @@ export async function adjustStock(params: {
       };
     }
 
-    // 4. Atomic conditional update preserving reserved_quantity
     const { data: updated, error: updateErr } = await supabase
       .from('inventory')
       .update({
@@ -230,7 +248,6 @@ export async function adjustStock(params: {
 
     const updatedItem = mapSupabaseInventory(updated);
 
-    // 5. Audit Log entry
     await recordInventoryAudit({
       userId: adminProfile.id,
       userEmail: adminProfile.email,
@@ -265,6 +282,28 @@ export async function updateLowStockThreshold(params: {
 
     const { productId, threshold, adminProfile, productName } = params;
 
+    // In client-side context, route through the secure admin API endpoint with JWT
+    if (typeof window !== 'undefined') {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch('/api/admin/inventory/threshold', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ productId, threshold, productName }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Failed to update threshold.' };
+      }
+      return { success: true, updatedItem: data.updatedItem };
+    }
+
+    // Server-side fallback execution
     if (typeof threshold !== 'number' || isNaN(threshold) || threshold < 0) {
       return { success: false, error: 'Low-stock threshold must be a valid non-negative number.' };
     }

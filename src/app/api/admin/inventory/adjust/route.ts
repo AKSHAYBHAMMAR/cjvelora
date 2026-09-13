@@ -12,41 +12,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { productId, delta, reason, productName } = body;
+    // 1. Verify user session & admin role strictly via Authorization header
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
 
-    // 1. Verify user session & admin role
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
     let adminProfile: AdminProfile | null = null;
 
-    if (!authError && user) {
-      const role = await verifyAdminRole(user.id, user.email);
-      if (role) {
-        adminProfile = { id: user.id, email: user.email || '', role };
-      }
-    }
-
-    // If session check in route handler didn't get user directly (e.g. client-driven with body profile),
-    // fallback to provided verified profile if admin authentication is established
-    if (!adminProfile) {
-      if (body.adminProfile && body.adminProfile.id && body.adminProfile.role) {
-        const verifiedRole = await verifyAdminRole(body.adminProfile.id, body.adminProfile.email);
-        if (verifiedRole) {
-          adminProfile = {
-            id: body.adminProfile.id,
-            email: body.adminProfile.email || '',
-            role: verifiedRole,
-          };
+    if (token) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (!authError && user) {
+        const role = await verifyAdminRole(user.id, user.email);
+        if (role) {
+          adminProfile = { id: user.id, email: user.email || '', role };
         }
       }
     }
 
     if (!adminProfile) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized: Valid admin credentials required.' },
+        { success: false, error: 'Unauthorized: Valid administrator credentials required.' },
         { status: 403 }
       );
     }
+
+    const body = await req.json();
+    const { productId, delta, reason, productName } = body;
 
     // 2. Validate input
     if (!productId) {

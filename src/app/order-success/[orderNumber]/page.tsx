@@ -87,7 +87,15 @@ export default function OrderSuccessPage() {
     );
   }
 
-  const shipping = order.shipping_address || {};
+  const shippingName = order.shipping_name || order.customer_name || 'Valued Client';
+  const addressLine1 = order.shipping_address_line1 || (typeof order.shipping_address === 'string' ? order.shipping_address : '') || '';
+  const city = order.shipping_city || '';
+  const state = order.shipping_state || '';
+  const postalCode = order.shipping_postal_code || '';
+  const country = order.shipping_country || 'India';
+  const phone = order.shipping_phone || order.customer_phone || '';
+  const isPaid = order.payment_status === 'paid';
+  const displayStatus = order.order_status || order.status || 'pending';
 
   return (
     <div className="min-h-screen bg-[#0a0e14] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
@@ -109,19 +117,33 @@ export default function OrderSuccessPage() {
           </p>
         </div>
 
-        {/* Payment Notice Callout (Explicitly clarifying payment is pending for Step 14) */}
+        {/* Payment Confirmation Banner */}
         <div className="mb-8 p-5 rounded-2xl bg-white/[0.02] border border-[#d4af37]/30 backdrop-blur-sm">
           <div className="flex items-start space-x-3">
-            <Clock className="w-5 h-5 text-[#d4af37] mt-0.5 flex-shrink-0" />
+            {isPaid ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+            ) : (
+              <Clock className="w-5 h-5 text-[#d4af37] mt-0.5 flex-shrink-0" />
+            )}
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="text-sm font-semibold text-white">Payment Architecture Notice</h3>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">
-                  Pending Gateway Integration
+                <h3 className="text-sm font-semibold text-white">
+                  {isPaid ? 'Payment Confirmed' : 'Payment Processing'}
+                </h3>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    isPaid
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  }`}
+                >
+                  {isPaid ? 'Paid' : 'Pending Gateway Capture'}
                 </span>
               </div>
               <p className="text-xs text-white/70 mt-1 leading-relaxed">
-                Your order foundation has been securely created in our database. Live payment capture via Razorpay will be initialized in the upcoming stage. No payment has been debited yet, and the order is in <span className="text-white font-medium">Pending</span> state.
+                {isPaid
+                  ? `Your payment has been cryptographically confirmed. Your artisan piece has entered production.`
+                  : `Your order has been safely recorded in our boutique register. When live payment capture completes, status will automatically update to Processing.`}
               </p>
             </div>
           </div>
@@ -144,12 +166,16 @@ export default function OrderSuccessPage() {
             <div>
               <span className="text-white/40 uppercase tracking-wider block mb-1">Order Status</span>
               <span className="inline-block px-2 py-0.5 bg-white/10 text-white/90 rounded text-[11px] font-medium capitalize">
-                {order.status}
+                {displayStatus}
               </span>
             </div>
             <div>
               <span className="text-white/40 uppercase tracking-wider block mb-1">Payment Status</span>
-              <span className="inline-block px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] font-medium capitalize">
+              <span
+                className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium capitalize ${
+                  isPaid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/10 text-amber-300'
+                }`}
+              >
                 {order.payment_status}
               </span>
             </div>
@@ -167,24 +193,29 @@ export default function OrderSuccessPage() {
               <Package className="w-3.5 h-3.5 mr-1.5 text-[#d4af37]" /> Ordered Pieces
             </h3>
             <div className="space-y-3">
-              {orderItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between py-2 border-b border-white/5 text-sm"
-                >
-                  <div>
-                    <p className="font-serif text-white">{item.product_name}</p>
-                    <p className="text-xs text-white/40">
-                      Qty: {item.quantity} × ₹{Number(item.unit_price).toLocaleString('en-IN')}
-                    </p>
+              {orderItems.map((item) => {
+                const itemSubtotal = Number(
+                  item.subtotal ?? item.line_total ?? item.total_price ?? (Number(item.unit_price) * item.quantity)
+                );
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between py-2 border-b border-white/5 text-sm"
+                  >
+                    <div>
+                      <p className="font-serif text-white">{item.product_name}</p>
+                      <p className="text-xs text-white/40">
+                        Qty: {item.quantity} × ₹{Number(item.unit_price).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-white/90">
+                        ₹{itemSubtotal.toLocaleString('en-IN')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-white/90">
-                      ₹{Number(item.subtotal).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -194,12 +225,16 @@ export default function OrderSuccessPage() {
               <Truck className="w-3.5 h-3.5 mr-1.5 text-[#d4af37]" /> Delivery Information
             </h3>
             <div className="text-xs text-white/80 space-y-1 bg-white/5 p-4 rounded-xl">
-              <p className="font-semibold text-white">{shipping.fullName}</p>
-              <p>{shipping.addressLine1}</p>
-              <p>
-                {shipping.city}, {shipping.state} — {shipping.postalCode}
-              </p>
-              <p className="text-white/60">Phone: {shipping.phone}</p>
+              <p className="font-semibold text-white">{shippingName}</p>
+              {addressLine1 && <p>{addressLine1}</p>}
+              {(city || state || postalCode) && (
+                <p>
+                  {[city, state].filter(Boolean).join(', ')}
+                  {postalCode ? ` — ${postalCode}` : ''}
+                </p>
+              )}
+              <p className="text-white/50">{country}</p>
+              {phone && <p className="text-white/60">Phone: {phone}</p>}
             </div>
           </div>
 

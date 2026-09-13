@@ -132,6 +132,7 @@ export interface AdminOrderItem {
   productName: string;
   quantity: number;
   unitPrice: number;
+  subtotal: number;
   lineTotal: number;
   productImage?: string;
   createdAt?: string;
@@ -151,6 +152,7 @@ export interface AdminOrder {
 
   shippingName?: string;
   shippingAddress?: string;
+  shippingAddressLine1?: string;
   shippingCity?: string;
   shippingState?: string;
   shippingPostalCode?: string;
