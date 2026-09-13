@@ -29,14 +29,6 @@ export default function EmailVerificationNotice({
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  const maskEmail = (val: string) => {
-    if (!val) return '';
-    const [user, domain] = val.split('@');
-    if (!domain) return val;
-    const visibleUser = user.length > 2 ? `${user.slice(0, 2)}****` : `${user}****`;
-    return `${visibleUser}@${domain}`;
-  };
-
   const handleResend = async () => {
     if (cooldown > 0 || resending) return;
     setError(null);
@@ -63,8 +55,11 @@ export default function EmailVerificationNotice({
       <div className="space-y-2">
         <h2 className="font-serif text-2xl sm:text-3xl text-white">Check Your Inbox</h2>
         <p className="text-xs text-white/60 max-w-sm mx-auto leading-relaxed">
-          We have sent a verification link to{' '}
-          <strong className="text-white font-mono">{maskEmail(email)}</strong>. Please click the link to activate your CJVELORA customer account.
+          We&apos;ve sent a verification link to your email address:
+          <br />
+          <strong className="text-white font-mono mt-1 inline-block">{email}</strong>
+          <br />
+          Please verify your email to continue.
         </p>
       </div>
 
@@ -97,13 +92,13 @@ export default function EmailVerificationNotice({
               ) : (
                 <RefreshCw className="w-3.5 h-3.5" />
               )}
-              <span>Resend Verification</span>
+              <span>Resend verification email</span>
             </button>
           )}
         </div>
 
         <p className="text-[11px] text-white/40">
-          Be sure to check your spam, updates, or promotions folder if it doesn&apos;t appear shortly.
+          Be sure to check your spam or junk folder if it doesn&apos;t appear shortly.
         </p>
       </div>
 
@@ -114,14 +109,14 @@ export default function EmailVerificationNotice({
             onClick={onBackToSignIn}
             className="inline-flex items-center text-xs uppercase tracking-widest text-white/60 hover:text-[#d4af37] transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Return to Sign In
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
           </button>
         ) : (
           <Link
             href="/customer/login"
             className="inline-flex items-center text-xs uppercase tracking-widest text-white/60 hover:text-[#d4af37] transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Return to Sign In
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
           </Link>
         )}
       </div>

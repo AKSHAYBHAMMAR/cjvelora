@@ -3,9 +3,8 @@
 import React, { FormEvent, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, LockKeyhole, Mail, Phone, Eye, EyeOff } from 'lucide-react';
-import { signInCustomer, signInWithGoogle, sanitizeRedirectUrl } from '@/lib/auth';
-import PhoneAuthFlow from '@/components/auth/PhoneAuthFlow';
+import { ArrowLeft, Loader2, LockKeyhole, Mail, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { signInCustomer, signInWithGoogle, resendEmailVerification, sanitizeRedirectUrl } from '@/lib/auth';
 
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -36,17 +35,21 @@ function CustomerLoginForm() {
   const rawNext = searchParams.get('next') || '/account/orders';
   const next = sanitizeRedirectUrl(rawNext, '/account/orders');
 
-  const [authMethod, setAuthMethod] = useState<'options' | 'phone'>('options');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleEmailSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setIsUnverified(false);
+    setResendStatus(null);
     setLoading(true);
 
     const result = await signInCustomer(email, password);
@@ -54,6 +57,9 @@ function CustomerLoginForm() {
 
     if (result.error) {
       setError(result.error);
+      if (result.isUnverified) {
+        setIsUnverified(true);
+      }
       return;
     }
 
@@ -63,11 +69,27 @@ function CustomerLoginForm() {
 
   const handleGoogleSignIn = async () => {
     setError(null);
+    setIsUnverified(false);
     setGoogleLoading(true);
     const result = await signInWithGoogle(next);
     if (result.error) {
       setError(result.error);
       setGoogleLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email.trim() || resending) return;
+    setResending(true);
+    setResendStatus(null);
+
+    const result = await resendEmailVerification(email, next);
+    setResending(false);
+
+    if (result.error) {
+      setResendStatus(`Failed to resend: ${result.error}`);
+    } else {
+      setResendStatus('A verification link has been sent to your email.');
     }
   };
 
@@ -83,145 +105,147 @@ function CustomerLoginForm() {
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 sm:p-9 shadow-2xl">
         {/* Brand Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
-          <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Client Portal</h1>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">VELORA</p>
+          <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Welcome Back</h1>
           <p className="text-xs sm:text-sm text-white/50 mt-2">Sign in to your private customer account.</p>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300 animate-fade-in">
-            {error}
+          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300 animate-fade-in space-y-2">
+            <p>{error}</p>
+            {isUnverified && (
+              <div className="pt-2 border-t border-rose-500/20">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resending}
+                  className="inline-flex items-center gap-1.5 text-[#d4af37] hover:underline font-medium cursor-pointer disabled:opacity-50"
+                >
+                  {resending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  )}
+                  <span>Resend verification email</span>
+                </button>
+                {resendStatus && (
+                  <p className="mt-1.5 text-[11px] text-emerald-400">{resendStatus}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {authMethod === 'phone' ? (
-          <PhoneAuthFlow
-            nextUrl={next}
-            onCancel={() => setAuthMethod('options')}
-          />
-        ) : (
-          <div className="space-y-6">
-            {/* Quick Multi-Method Action Buttons */}
-            <div className="space-y-3">
-              {/* Continue with Google */}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={googleLoading || loading}
-                className="w-full rounded-xl border border-white/15 bg-white/5 py-3 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
-              >
-                {googleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-[#d4af37]" />
-                ) : (
-                  <GoogleIcon className="w-4 h-4" />
-                )}
-                <span>Continue with Google</span>
-              </button>
-
-              {/* Continue with Phone */}
-              <button
-                type="button"
-                onClick={() => setAuthMethod('phone')}
-                disabled={googleLoading || loading}
-                className="w-full rounded-xl border border-white/15 bg-white/5 py-3 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
-              >
-                <Phone className="w-4 h-4 text-[#d4af37]" />
-                <span>Continue with Phone OTP</span>
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4 my-2">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">Or email</span>
-              <div className="flex-1 h-px bg-white/10" />
-            </div>
-
-            {/* Email + Password Form */}
-            <form onSubmit={handleEmailSignIn} className="space-y-4">
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
-                    placeholder="you@example.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs uppercase tracking-wider text-white/60">Password</label>
-                  <Link
-                    href="/customer/forgot-password"
-                    className="text-xs text-[#d4af37] hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
-                    placeholder="Your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || googleLoading}
-                className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing In...
-                  </span>
-                ) : (
-                  'Sign In with Email'
-                )}
-              </button>
-            </form>
-
-            <div className="pt-5 border-t border-white/10 text-center text-sm text-white/50">
-              New to CJVELORA?{' '}
-              <Link
-                href={`/customer/register?next=${encodeURIComponent(next)}`}
-                className="text-[#d4af37] hover:underline font-medium"
-              >
-                Create an account
-              </Link>
-            </div>
-
-            {/* Separate Admin Portal Link */}
-            <div className="pt-2 text-center">
-              <Link
-                href="/admin/login"
-                className="text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors"
-              >
-                Administrator Access
-              </Link>
-            </div>
+        <div className="space-y-6">
+          {/* Continue with Google */}
+          <div>
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading || loading}
+              className="w-full rounded-xl border border-white/15 bg-white/5 py-3.5 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+            >
+              {googleLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#d4af37]" />
+              ) : (
+                <GoogleIcon className="w-4 h-4" />
+              )}
+              <span>Continue with Google</span>
+            </button>
           </div>
-        )}
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-2">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">OR</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* Email + Password Form */}
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs uppercase tracking-wider text-white/60">Password</label>
+                <Link
+                  href="/customer/forgot-password"
+                  className="text-xs text-[#d4af37] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                  placeholder="Your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || googleLoading}
+              className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing In...
+                </span>
+              ) : (
+                'Continue with Email'
+              )}
+            </button>
+          </form>
+
+          <div className="pt-5 border-t border-white/10 text-center text-sm text-white/50">
+            Don&apos;t have an account?{' '}
+            <Link
+              href={`/customer/register?next=${encodeURIComponent(next)}`}
+              className="text-[#d4af37] hover:underline font-medium"
+            >
+              Create account
+            </Link>
+          </div>
+
+          {/* Separate Admin Portal Link */}
+          <div className="pt-2 text-center">
+            <Link
+              href="/admin/login"
+              className="text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors"
+            >
+              Administrator Access
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

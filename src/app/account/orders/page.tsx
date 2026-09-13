@@ -96,7 +96,7 @@ export default function CustomerOrdersPage() {
             <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" /> Back to Boutique
           </Link>
           <span className="text-xs text-white/40 tracking-wider truncate max-w-[140px] sm:max-w-none">
-            Client: {user.email || user.phone || 'Verified Client'}
+            Client: {user.email || 'Verified Client'}
           </span>
         </div>
 

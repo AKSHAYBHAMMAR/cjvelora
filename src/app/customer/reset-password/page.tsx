@@ -56,7 +56,7 @@ function ResetPasswordForm() {
 
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 sm:p-9 shadow-2xl">
         <div className="text-center mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">VELORA</p>
           <h1 className="font-serif text-3xl mt-2 text-white">Set New Password</h1>
           <p className="text-sm text-white/50 mt-3">Choose a strong, private password for your account.</p>
         </div>

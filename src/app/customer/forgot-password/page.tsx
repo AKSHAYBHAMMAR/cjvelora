@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
 
         <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 sm:p-9 shadow-2xl">
           <div className="text-center mb-8">
-            <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">VELORA</p>
             <h1 className="font-serif text-3xl mt-2 text-white">Reset Password</h1>
             <p className="text-sm text-white/50 mt-2.5">
               Enter your registered email address to receive a secure recovery link.

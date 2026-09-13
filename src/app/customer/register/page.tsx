@@ -3,9 +3,8 @@
 import React, { FormEvent, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, LockKeyhole, Mail, UserRound, Phone, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Loader2, LockKeyhole, Mail, UserRound, Eye, EyeOff } from 'lucide-react';
 import { signUpCustomer, signInWithGoogle, sanitizeRedirectUrl } from '@/lib/auth';
-import PhoneAuthFlow from '@/components/auth/PhoneAuthFlow';
 import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
 
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
@@ -37,7 +36,6 @@ function CustomerRegisterForm() {
   const rawNext = searchParams.get('next') || '/account/orders';
   const next = sanitizeRedirectUrl(rawNext, '/account/orders');
 
-  const [authMethod, setAuthMethod] = useState<'options' | 'phone'>('options');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -108,23 +106,11 @@ function CustomerRegisterForm() {
             nextUrl={next}
             onBackToSignIn={() => router.push(`/customer/login?next=${encodeURIComponent(next)}`)}
           />
-        ) : authMethod === 'phone' ? (
-          <div>
-            <div className="text-center mb-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
-              <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Phone Sign Up</h1>
-              <p className="text-xs sm:text-sm text-white/50 mt-1.5 sm:mt-2">Instant, passwordless registration via SMS.</p>
-            </div>
-            <PhoneAuthFlow
-              nextUrl={next}
-              onCancel={() => setAuthMethod('options')}
-            />
-          </div>
         ) : (
           <div className="space-y-6">
             {/* Header */}
-            <div className="text-center mb-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">CJVELORA</p>
+            <div className="text-center mb-6 sm:mb-8">
+              <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">VELORA</p>
               <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Create Account</h1>
               <p className="text-xs sm:text-sm text-white/50 mt-1.5 sm:mt-2">Join our private clientele for bespoke crochet luxury.</p>
             </div>
@@ -135,14 +121,13 @@ function CustomerRegisterForm() {
               </div>
             )}
 
-            {/* Quick Multi-Method Action Buttons */}
-            <div className="space-y-3">
-              {/* Continue with Google */}
+            {/* Continue with Google */}
+            <div>
               <button
                 type="button"
                 onClick={handleGoogleSignUp}
                 disabled={googleLoading || loading}
-                className="w-full rounded-xl border border-white/15 bg-white/5 py-3 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+                className="w-full rounded-xl border border-white/15 bg-white/5 py-3.5 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
               >
                 {googleLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-[#d4af37]" />
@@ -151,23 +136,12 @@ function CustomerRegisterForm() {
                 )}
                 <span>Continue with Google</span>
               </button>
-
-              {/* Continue with Phone */}
-              <button
-                type="button"
-                onClick={() => setAuthMethod('phone')}
-                disabled={googleLoading || loading}
-                className="w-full rounded-xl border border-white/15 bg-white/5 py-3 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
-              >
-                <Phone className="w-4 h-4 text-[#d4af37]" />
-                <span>Continue with Phone</span>
-              </button>
             </div>
 
             {/* Divider */}
             <div className="flex items-center gap-4 my-2">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">Or email</span>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">OR</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
@@ -190,7 +164,7 @@ function CustomerRegisterForm() {
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email Address</label>
+                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <input
@@ -222,6 +196,7 @@ function CustomerRegisterForm() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -246,6 +221,7 @@ function CustomerRegisterForm() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -263,7 +239,7 @@ function CustomerRegisterForm() {
                     <Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating Account...
                   </span>
                 ) : (
-                  'Create Customer Account'
+                  'Create Account'
                 )}
               </button>
             </form>

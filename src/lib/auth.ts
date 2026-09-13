@@ -170,107 +170,44 @@ export async function signInWithGoogle(nextUrl = '/account/orders'): Promise<{ e
 }
 
 /**
- * Sends a 6-digit SMS OTP to a customer phone number in E.164 format.
- */
-export async function sendPhoneOtp(phoneNumber: string): Promise<{ error: string | null }> {
-  try {
-    if (!isSupabaseConfigured) {
-      return { error: 'Authentication service is not configured.' };
-    }
-
-    const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
-    if (!cleanPhone.startsWith('+') || cleanPhone.length < 9) {
-      return { error: 'Please enter a valid phone number with country code.' };
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: cleanPhone,
-      options: {
-        shouldCreateUser: true,
-      },
-    });
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    return { error: null };
-  } catch (err: any) {
-    return { error: err?.message || 'Failed to send OTP.' };
-  }
-}
-
-/**
- * Verifies the 6-digit SMS OTP token for customer sign-in.
- */
-export async function verifyPhoneOtp(
-  phoneNumber: string,
-  token: string
-): Promise<{ profile: CustomerProfile | null; error: string | null }> {
-  try {
-    if (!isSupabaseConfigured) {
-      return { profile: null, error: 'Authentication service is not configured.' };
-    }
-
-    const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
-    const cleanToken = token.trim();
-
-    if (cleanToken.length !== 6) {
-      return { profile: null, error: 'Please enter the 6-digit verification code.' };
-    }
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: cleanPhone,
-      token: cleanToken,
-      type: 'sms',
-    });
-
-    if (error || !data.user) {
-      return { profile: null, error: error?.message || 'Invalid or expired verification code.' };
-    }
-
-    // Ensure phone auth cannot be used to usurp admin accounts
-    const adminRole = await verifyAdminRole(data.user.id, data.user.email);
-    if (adminRole) {
-      await supabase.auth.signOut();
-      return { profile: null, error: 'This credential belongs to an administrator account.' };
-    }
-
-    return {
-      profile: {
-        id: data.user.id,
-        email: data.user.email || '',
-        phone: data.user.phone || cleanPhone,
-        fullName: String(data.user.user_metadata?.full_name || 'Client').trim(),
-        provider: 'phone',
-      },
-      error: null,
-    };
-  } catch (err: any) {
-    return { profile: null, error: err?.message || 'An unexpected error occurred during verification.' };
-  }
-}
-
-/**
  * Customer email + password sign-in.
  * An account with an admin role cannot use this customer login.
  */
 export async function signInCustomer(
   email: string,
   password: string
-): Promise<{ profile: CustomerProfile | null; error: string | null }> {
+): Promise<{ profile: CustomerProfile | null; error: string | null; isUnverified?: boolean }> {
   try {
     if (!isSupabaseConfigured) {
       return { profile: null, error: 'Supabase is not configured. Please check your environment variables.' };
     }
 
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
+      return { profile: null, error: 'Please enter both your email address and password.' };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: cleanEmail,
       password,
     });
 
     if (error || !data.user) {
-      return { profile: null, error: error?.message || 'Invalid email or password.' };
+      const msg = error?.message || '';
+      const isUnverified =
+        msg.toLowerCase().includes('email not confirmed') ||
+        msg.toLowerCase().includes('not confirmed') ||
+        msg.toLowerCase().includes('email_not_confirmed');
+
+      if (isUnverified) {
+        return {
+          profile: null,
+          error: 'Please verify your email before signing in.',
+          isUnverified: true,
+        };
+      }
+
+      return { profile: null, error: msg || 'Invalid email or password.', isUnverified: false };
     }
 
     const adminRole = await verifyAdminRole(data.user.id, data.user.email);
@@ -282,10 +219,11 @@ export async function signInCustomer(
     return {
       profile: {
         id: data.user.id,
-        email: data.user.email || email.trim(),
+        email: data.user.email || cleanEmail,
         phone: data.user.phone,
         fullName: String(data.user.user_metadata?.full_name || '').trim(),
         avatarUrl: data.user.user_metadata?.avatar_url,
+        provider: data.user.app_metadata?.provider || 'email',
       },
       error: null,
     };
@@ -430,7 +368,7 @@ export async function getCustomerProfile(): Promise<CustomerProfile | null> {
     const adminRole = await verifyAdminRole(user.id, user.email);
     if (adminRole) return null;
 
-    const provider = user.app_metadata?.provider || (user.phone ? 'phone' : 'email');
+    const provider = user.app_metadata?.provider || 'email';
 
     return {
       id: user.id,
@@ -439,7 +377,7 @@ export async function getCustomerProfile(): Promise<CustomerProfile | null> {
       fullName: String(
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
-        (user.phone ? `Client (${user.phone.slice(-4)})` : 'Client')
+        'Client'
       ).trim(),
       avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture,
       provider,

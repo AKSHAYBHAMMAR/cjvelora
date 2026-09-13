@@ -76,7 +76,16 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // 4. Security Check: Customers must NEVER be administrators
+        // 4. Check if this is a password recovery callback
+        const type = searchParams.get('type');
+        if (type === 'recovery') {
+          if (isMounted) {
+            router.push('/customer/reset-password');
+          }
+          return;
+        }
+
+        // 5. Security Check: Customers must NEVER be administrators
         const adminRole = await verifyAdminRole(user.id, user.email);
         if (adminRole) {
           await supabase.auth.signOut();
