@@ -10,9 +10,7 @@ import {
   Boxes,
   ClipboardList,
   Users,
-  Percent,
-  BarChart3,
-  FileText,
+  Layers,
   Settings,
   LogOut,
   ShieldCheck,
@@ -24,15 +22,13 @@ import {
 } from 'lucide-react';
 
 const NAVIGATION_ITEMS = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, current: true },
-  { name: 'Products', href: '/admin/products', icon: ShoppingBag, current: false },
-  { name: 'Inventory', href: '/admin/inventory', icon: Boxes, current: false },
-  { name: 'Orders', href: '/admin/orders', icon: ClipboardList, current: false },
-  { name: 'Customers', href: '/admin/customers', icon: Users, current: false },
-  { name: 'Discounts', href: '/admin/discounts', icon: Percent, current: false },
-  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, current: false },
-  { name: 'Content', href: '/admin/content', icon: FileText, current: false },
-  { name: 'Settings', href: '/admin/settings', icon: Settings, current: false },
+  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, implemented: true },
+  { name: 'Orders', href: '/admin/orders', icon: ClipboardList, implemented: true },
+  { name: 'Products', href: '/admin/products', icon: ShoppingBag, implemented: true },
+  { name: 'Inventory', href: '/admin/inventory', icon: Boxes, implemented: true },
+  { name: 'Customers', href: '#customers-future', icon: Users, implemented: false, phase: 'Phase 2' },
+  { name: 'Categories', href: '#categories-future', icon: Layers, implemented: false, phase: 'Phase 2' },
+  { name: 'Settings', href: '#settings-future', icon: Settings, implemented: false, phase: 'Phase 3' },
 ];
 
 export default function AdminLayout({
@@ -148,13 +144,20 @@ export default function AdminLayout({
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl font-sans text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
                   isActive
                     ? 'bg-soft-gold text-charcoal shadow-luxury'
-                    : 'text-ivory/70 hover:text-white hover:bg-white/5'
+                    : item.implemented
+                    ? 'text-ivory/70 hover:text-white hover:bg-white/5'
+                    : 'text-ivory/40 hover:text-ivory/60 hover:bg-white/[0.02]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-charcoal' : 'text-ivory/60'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-charcoal' : item.implemented ? 'text-ivory/60' : 'text-ivory/30'}`} />
                 <span>{item.name}</span>
-                {item.name === 'Dashboard' && (
+                {item.name === 'Dashboard' && isActive && (
                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-charcoal" />
+                )}
+                {item.phase && (
+                  <span className="ml-auto font-tech text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-ivory/40 border border-white/5 font-semibold">
+                    {item.phase}
+                  </span>
                 )}
               </Link>
             );
@@ -225,11 +228,20 @@ export default function AdminLayout({
                     href={item.href}
                     onClick={() => setMobileSidebarOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-semibold ${
-                      isActive ? 'bg-soft-gold text-charcoal' : 'text-ivory/70 hover:bg-white/5'
+                      isActive
+                        ? 'bg-soft-gold text-charcoal'
+                        : item.implemented
+                        ? 'text-ivory/70 hover:bg-white/5'
+                        : 'text-ivory/40 hover:bg-white/[0.02]'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.name}</span>
+                    {item.phase && (
+                      <span className="ml-auto font-tech text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-ivory/40 border border-white/5 font-semibold">
+                        {item.phase}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
