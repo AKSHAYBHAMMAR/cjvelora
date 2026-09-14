@@ -141,6 +141,7 @@ export async function signInWithGoogle(nextUrl = '/account/orders'): Promise<{ e
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem('velora_auth_next', cleanNext);
+        localStorage.setItem('velora_auth_next', cleanNext);
       } catch {
         // Ignore storage errors in restricted browser modes
       }

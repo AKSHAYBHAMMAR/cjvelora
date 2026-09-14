@@ -12,13 +12,66 @@ import {
   Loader2,
   AlertCircle,
   ArrowLeft,
+  CheckCircle2,
 } from 'lucide-react';
+import CancelOrderModal from '@/components/orders/CancelOrderModal';
 
 export default function CustomerOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  // Modal states for cancelling unpaid orders
+  const [orderToCancel, setOrderToCancel] = useState<any | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const handleConfirmCancellation = async () => {
+    if (!orderToCancel) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
+      const res = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ orderId: orderToCancel.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to cancel order.');
+      }
+
+      // Update state locally
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderToCancel.id
+            ? { ...o, status: 'cancelled', order_status: 'cancelled' }
+            : o
+        )
+      );
+
+      setActionSuccess(`Order #${orderToCancel.order_number} has been cancelled.`);
+      setOrderToCancel(null);
+    } catch (err: any) {
+      console.error('Error cancelling order:', err);
+      setCancelError(err.message || 'Could not cancel order. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   useEffect(() => {
     async function loadCustomerOrders() {
@@ -112,6 +165,13 @@ export default function CustomerOrdersPage() {
           </p>
         </div>
 
+        {actionSuccess && (
+          <div className="mb-6 sm:mb-8 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center space-x-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <p className="text-sm text-emerald-300">{actionSuccess}</p>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 sm:mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-3">
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
@@ -135,61 +195,102 @@ export default function CustomerOrdersPage() {
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {orders.map((order) => (
-              <Link
-                key={order.id}
-                href={`/account/orders/${order.order_number}`}
-                className="block group bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-[#d4af37]/40 rounded-2xl p-4 sm:p-6 transition-all"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-base font-serif text-white font-medium group-hover:text-[#d4af37] transition-colors">
-                        {order.order_number}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                          order.status === 'completed'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : order.status === 'cancelled'
-                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        }`}
+            {orders.map((order) => {
+              const displayStatus = String(order.order_status || order.status || 'pending').toLowerCase();
+              const paymentStatus = String(order.payment_status || 'pending').toLowerCase();
+              const isCancellable =
+                (paymentStatus === 'pending' || paymentStatus === 'failed') &&
+                displayStatus === 'pending';
+
+              return (
+                <div
+                  key={order.id}
+                  className="group bg-white/[0.02] hover:bg-white/[0.04] border border-white/10 hover:border-[#d4af37]/40 rounded-2xl p-4 sm:p-6 transition-all"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <Link
+                      href={`/account/orders/${order.order_number}`}
+                      className="flex-1"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <span className="text-base font-serif text-white font-medium group-hover:text-[#d4af37] transition-colors">
+                          {order.order_number}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                            displayStatus === 'completed' || displayStatus === 'delivered'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : displayStatus === 'cancelled' || displayStatus === 'refunded'
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}
+                        >
+                          {displayStatus}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-white/5 text-white/70 border border-white/10">
+                          Payment: {paymentStatus}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-white/50 mt-2">
+                        <span className="flex items-center">
+                          <Calendar className="w-3.5 h-3.5 mr-1 text-[#d4af37]" />
+                          {new Date(order.created_at).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                    </Link>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                      <div className="text-left sm:text-right">
+                        <span className="text-xs text-white/40 block">Order Total</span>
+                        <span className="text-base font-bold text-[#d4af37]">
+                          ₹{Number(order.total_amount).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+
+                      {isCancellable && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOrderToCancel(order);
+                            setCancelError(null);
+                          }}
+                          className="px-3.5 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                          Cancel Order
+                        </button>
+                      )}
+
+                      <Link
+                        href={`/account/orders/${order.order_number}`}
+                        aria-label={`View order ${order.order_number}`}
+                        className="p-1 text-white/40 group-hover:text-[#d4af37] group-hover:translate-x-0.5 transition-all"
                       >
-                        {order.status}
-                      </span>
+                        <ChevronRight className="w-5 h-5" />
+                      </Link>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-white/50 mt-2">
-                      <span className="flex items-center">
-                        <Calendar className="w-3.5 h-3.5 mr-1 text-[#d4af37]" />
-                        {new Date(order.created_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <span className="flex items-center">
-                        <CreditCard className="w-3.5 h-3.5 mr-1 text-[#d4af37]" />
-                        Payment: <span className="text-white/80 ml-1 capitalize">{order.payment_status}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end space-x-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                    <div className="text-left sm:text-right">
-                      <span className="text-xs text-white/40 block">Order Total</span>
-                      <span className="text-base font-bold text-[#d4af37]">
-                        ₹{Number(order.total_amount).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-[#d4af37] group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
+
+        {/* Confirmation Modal */}
+        <CancelOrderModal
+          isOpen={Boolean(orderToCancel)}
+          orderNumber={orderToCancel?.order_number || ''}
+          onClose={() => {
+            if (!isCancelling) setOrderToCancel(null);
+          }}
+          onConfirm={handleConfirmCancellation}
+          isCancelling={isCancelling}
+          error={cancelError}
+        />
       </div>
     </div>
   );

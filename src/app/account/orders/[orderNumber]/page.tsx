@@ -14,7 +14,9 @@ import {
   AlertCircle,
   FileText,
   Clock,
+  CheckCircle2,
 } from 'lucide-react';
+import CancelOrderModal from '@/components/orders/CancelOrderModal';
 
 export default function CustomerOrderDetailPage() {
   const params = useParams();
@@ -25,6 +27,52 @@ export default function CustomerOrderDetailPage() {
   const [order, setOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Cancellation states
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+
+  const handleConfirmCancellation = async () => {
+    if (!order) return;
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
+      const res = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ orderId: order.id, orderNumber: order.order_number }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to cancel order.');
+      }
+
+      setOrder((prev: any) => ({
+        ...prev,
+        status: 'cancelled',
+        order_status: 'cancelled',
+      }));
+      setCancelSuccess('This order has been cancelled.');
+      setShowCancelModal(false);
+    } catch (err: any) {
+      console.error('Error cancelling order:', err);
+      setCancelError(err.message || 'Could not cancel order. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   useEffect(() => {
     async function loadCustomerOrder() {
@@ -129,7 +177,11 @@ export default function CustomerOrderDetailPage() {
   const postalCode = order.shipping_postal_code || '';
   const country = order.shipping_country || 'India';
   const phone = order.shipping_phone || order.customer_phone || '';
-  const displayStatus = order.order_status || order.status || 'pending';
+  const displayStatus = String(order.order_status || order.status || 'pending').toLowerCase();
+  const paymentStatus = String(order.payment_status || 'pending').toLowerCase();
+  const isCancellable =
+    (paymentStatus === 'pending' || paymentStatus === 'failed') &&
+    displayStatus === 'pending';
   const discountVal = Number(order.discount_amount ?? order.discount ?? 0);
 
   return (
@@ -147,6 +199,13 @@ export default function CustomerOrderDetailPage() {
             {order.order_number}
           </span>
         </div>
+
+        {cancelSuccess && (
+          <div className="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 flex items-center space-x-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <p className="text-sm text-emerald-300">{cancelSuccess}</p>
+          </div>
+        )}
 
         {/* Header Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -183,6 +242,18 @@ export default function CustomerOrderDetailPage() {
             <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/10 text-white/80 border border-white/10">
               Payment: {order.payment_status}
             </span>
+            {isCancellable && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(true);
+                  setCancelError(null);
+                }}
+                className="px-4 py-1.5 rounded-full border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Cancel Order
+              </button>
+            )}
           </div>
         </div>
 
@@ -289,6 +360,18 @@ export default function CustomerOrderDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modal */}
+        <CancelOrderModal
+          isOpen={showCancelModal}
+          orderNumber={order.order_number}
+          onClose={() => {
+            if (!isCancelling) setShowCancelModal(false);
+          }}
+          onConfirm={handleConfirmCancellation}
+          isCancelling={isCancelling}
+          error={cancelError}
+        />
       </div>
     </div>
   );

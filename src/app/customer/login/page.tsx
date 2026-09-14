@@ -32,7 +32,7 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
 function CustomerLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawNext = searchParams.get('next') || '/account/orders';
+  const rawNext = searchParams.get('redirect') || searchParams.get('next') || '/account/orders';
   const next = sanitizeRedirectUrl(rawNext, '/account/orders');
 
   const [email, setEmail] = useState('');

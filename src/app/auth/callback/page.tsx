@@ -31,19 +31,24 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Resolve destination from sessionStorage (set during signInWithGoogle) or query parameters
+        // Resolve destination from storage (set during signInWithGoogle) or query parameters
         let cleanNext = '/account/orders';
         if (typeof window !== 'undefined') {
           try {
-            const savedNext = sessionStorage.getItem('velora_auth_next');
+            const savedSessionNext = sessionStorage.getItem('velora_auth_next');
+            const savedLocalNext = localStorage.getItem('velora_auth_next');
+            const savedNext = savedSessionNext || savedLocalNext;
             if (savedNext) {
               cleanNext = sanitizeRedirectUrl(savedNext, '/account/orders');
               sessionStorage.removeItem('velora_auth_next');
+              localStorage.removeItem('velora_auth_next');
             } else {
-              cleanNext = sanitizeRedirectUrl(searchParams.get('next'), '/account/orders');
+              const queryNext = searchParams.get('redirect') || searchParams.get('next');
+              cleanNext = sanitizeRedirectUrl(queryNext, '/account/orders');
             }
           } catch {
-            cleanNext = sanitizeRedirectUrl(searchParams.get('next'), '/account/orders');
+            const queryNext = searchParams.get('redirect') || searchParams.get('next');
+            cleanNext = sanitizeRedirectUrl(queryNext, '/account/orders');
           }
         }
 

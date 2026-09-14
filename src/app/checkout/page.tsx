@@ -20,6 +20,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useStore();
 
+  const [mounted, setMounted] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +38,32 @@ export default function CheckoutPage() {
     country: 'India',
   });
 
+  // Restore draft form state upon mount
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== 'undefined') {
+      try {
+        const savedDraft = sessionStorage.getItem('velora_checkout_draft');
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed && typeof parsed === 'object') {
+            setFormData((prev) => ({
+              ...prev,
+              fullName: parsed.fullName || prev.fullName,
+              phone: parsed.phone || prev.phone,
+              addressLine1: parsed.addressLine1 || prev.addressLine1,
+              city: parsed.city || prev.city,
+              state: parsed.state || prev.state,
+              postalCode: parsed.postalCode || prev.postalCode,
+            }));
+          }
+        }
+      } catch {
+        // Ignore storage parse errors
+      }
+    }
+  }, []);
+
   // Check auth session
   useEffect(() => {
     async function checkAuth() {
@@ -44,15 +71,16 @@ export default function CheckoutPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setUser(user);
-          // Pre-fill profile from available metadata or phone
+          // Pre-fill profile from available metadata or phone, preserving draft values
           setFormData((prev) => ({
             ...prev,
             email: user.email || prev.email,
-            phone: user.phone || prev.phone,
+            phone: prev.phone || user.phone || '',
             fullName:
+              prev.fullName ||
               user.user_metadata?.full_name ||
               user.user_metadata?.name ||
-              prev.fullName,
+              '',
           }));
         }
       } catch (err) {
@@ -70,31 +98,43 @@ export default function CheckoutPage() {
   const total = subtotal + shipping;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('velora_checkout_draft', JSON.stringify(updated));
+        } catch {
+          // Ignore restricted storage errors
+        }
+      }
+      return updated;
+    });
   };
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') return resolve(false);
-    if ((window as any).Razorpay) return resolve(true);
+  function loadRazorpayScript(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
 
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
 
     // Verify session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session || !session.user) {
-      router.push('/customer/login?next=/checkout');
+      router.push('/customer/login?redirect=/checkout');
       return;
     }
 
@@ -187,6 +227,13 @@ function loadRazorpayScript(): Promise<boolean> {
               }
 
               clearCart();
+              if (typeof window !== 'undefined') {
+                try {
+                  sessionStorage.removeItem('velora_checkout_draft');
+                } catch {
+                  // ignore
+                }
+              }
               router.push(`/order-success/${result.orderNumber}`);
             } catch (vErr: any) {
               console.error('Payment verification error:', vErr);
@@ -212,6 +259,13 @@ function loadRazorpayScript(): Promise<boolean> {
       } else {
         // Fallback when Razorpay credentials are not yet entered in environment
         clearCart();
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.removeItem('velora_checkout_draft');
+          } catch {
+            // ignore
+          }
+        }
         router.push(`/order-success/${result.orderNumber}`);
       }
     } catch (err: any) {
@@ -221,7 +275,7 @@ function loadRazorpayScript(): Promise<boolean> {
     }
   };
 
-  if (loadingUser) {
+  if (!mounted || loadingUser) {
     return (
       <div className="min-h-screen bg-[#0d1217] flex items-center justify-center text-white">
         <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
@@ -266,7 +320,7 @@ function loadRazorpayScript(): Promise<boolean> {
               </p>
             </div>
             <Link
-              href="/customer/login?next=/checkout"
+              href="/customer/login?redirect=/checkout"
               className="px-4 py-2 bg-[#d4af37] text-black text-xs uppercase tracking-wider font-semibold rounded-lg hover:bg-[#e5c158] transition-all whitespace-nowrap self-end xs:self-auto"
             >
               Sign In
@@ -534,12 +588,12 @@ function loadRazorpayScript(): Promise<boolean> {
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Securing Order...</span>
+                      <span>Proceeding to Payment...</span>
                     </>
                   ) : (
                     <>
                       <ShieldCheck className="w-4 h-4" />
-                      <span>Place Secure Order</span>
+                      <span>PROCEED TO PAYMENT</span>
                     </>
                   )}
                 </button>
