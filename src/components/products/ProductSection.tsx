@@ -18,7 +18,7 @@ export default function ProductSection() {
 
     async function loadProducts() {
       try {
-        const data = await getProducts();
+        const data = await getProducts({ publishedOnly: true });
         if (isMounted && data && data.length > 0) {
           setProducts(data);
         }

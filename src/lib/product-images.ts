@@ -269,3 +269,60 @@ export async function updateImageOrder(
     };
   }
 }
+
+/**
+ * Sets a specific image as the primary image for a product (display_order = 0)
+ * and updates products.image_url so it immediately takes precedence everywhere.
+ */
+export async function setPrimaryProductImage(
+  productId: string,
+  imageId: string,
+  storagePath: string
+): Promise<{ success: boolean; error: string | null; publicUrl?: string }> {
+  try {
+    if (!isSupabaseConfigured) {
+      return { success: false, error: 'Database is not configured.' };
+    }
+
+    const publicUrl = getPublicImageUrl(storagePath);
+
+    // 1. Fetch existing images for product
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('id, display_order')
+      .eq('product_id', productId)
+      .order('display_order', { ascending: true });
+
+    if (images && images.length > 0) {
+      let nextOrder = 1;
+      for (const img of images) {
+        if (img.id === imageId) {
+          await supabase
+            .from('product_images')
+            .update({ display_order: 0 })
+            .eq('id', img.id);
+        } else {
+          await supabase
+            .from('product_images')
+            .update({ display_order: nextOrder++ })
+            .eq('id', img.id);
+        }
+      }
+    }
+
+    // 2. Update products.image_url
+    const { error: prodErr } = await supabase
+      .from('products')
+      .update({ image_url: publicUrl })
+      .eq('id', productId);
+
+    if (prodErr) {
+      return { success: false, error: prodErr.message };
+    }
+
+    return { success: true, error: null, publicUrl };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to set primary image.' };
+  }
+}
+

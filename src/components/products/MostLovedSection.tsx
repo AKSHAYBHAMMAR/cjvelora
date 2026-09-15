@@ -17,7 +17,7 @@ export default function MostLovedSection() {
 
     async function loadMostLoved() {
       try {
-        const data = await getMostLovedProducts();
+        const data = await getMostLovedProducts({ publishedOnly: true });
         if (isMounted && data && data.length > 0) {
           setMostLovedProducts(data);
         }
