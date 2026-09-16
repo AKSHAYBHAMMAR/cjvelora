@@ -170,3 +170,33 @@ export interface AdminOrder {
   items: AdminOrderItem[];
 }
 
+export interface AdminCustomerShippingAddress {
+  name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+export interface AdminCustomerSummary {
+  id: string; // customerId (customer_id uuid, or sanitized email identifier if guest)
+  name: string;
+  email: string;
+  phone?: string;
+  customerSince: string;
+  lastOrderDate?: string;
+  totalOrders: number;
+  paidOrdersCount: number;
+  pendingOrdersCount: number;
+  cancelledOrdersCount: number;
+  totalSpent: number;
+  avgOrderValue: number;
+}
+
+export interface AdminCustomerDetail extends AdminCustomerSummary {
+  shippingAddresses: AdminCustomerShippingAddress[];
+  orders: AdminOrder[];
+}
+

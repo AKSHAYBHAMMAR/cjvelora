@@ -295,23 +295,28 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* KPI 3: Total Customers */}
-        <div className="p-6 rounded-2xl bg-[#14171A] border border-white/10 hover:border-soft-gold/40 transition-all duration-300 shadow-sm">
+        <Link
+          href="/admin/customers"
+          className="p-6 rounded-2xl bg-[#14171A] border border-white/10 hover:border-soft-gold/40 transition-all duration-300 shadow-sm block group"
+        >
           <div className="flex items-center justify-between mb-4">
-            <span className="font-tech text-xs uppercase tracking-wider text-ivory/60 font-semibold">
+            <span className="font-tech text-xs uppercase tracking-wider text-ivory/60 font-semibold group-hover:text-soft-gold transition-colors">
               Total Customers
             </span>
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-soft-gold/20 group-hover:text-soft-gold transition-colors">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="font-serif text-2xl sm:text-3xl font-bold text-white mb-1">
+          <div className="font-serif text-2xl sm:text-3xl font-bold text-white mb-1 group-hover:text-soft-gold transition-colors">
             {metrics.totalCustomers}
           </div>
           <div className="flex items-center justify-between text-xs text-ivory/50">
             <span>Client Accounts</span>
-            <span className="text-purple-300 font-tech font-semibold">Verified</span>
+            <span className="text-purple-300 font-tech font-semibold group-hover:text-soft-gold transition-colors flex items-center gap-1">
+              View Directory &rarr;
+            </span>
           </div>
-        </div>
+        </Link>
 
         {/* KPI 4: Available Inventory */}
         <div className="p-6 rounded-2xl bg-[#14171A] border border-white/10 hover:border-soft-gold/40 transition-all duration-300 shadow-sm">
