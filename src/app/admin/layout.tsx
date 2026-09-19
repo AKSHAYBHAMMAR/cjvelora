@@ -27,7 +27,7 @@ const NAVIGATION_ITEMS = [
   { name: 'Products', href: '/admin/products', icon: ShoppingBag, implemented: true },
   { name: 'Inventory', href: '/admin/inventory', icon: Boxes, implemented: true },
   { name: 'Customers', href: '/admin/customers', icon: Users, implemented: true },
-  { name: 'Categories', href: '#categories-future', icon: Layers, implemented: false, phase: 'Phase 2' },
+  { name: 'Categories', href: '/admin/categories', icon: Layers, implemented: true },
   { name: 'Settings', href: '#settings-future', icon: Settings, implemented: false, phase: 'Phase 3' },
 ];
 

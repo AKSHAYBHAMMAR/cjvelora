@@ -45,6 +45,37 @@ export interface CategoryItem {
   itemCount: number;
 }
 
+export interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  isActive: boolean;
+  displayOrder: number;
+  productCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  slug?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  displayOrder?: number;
+}
+
+export interface UpdateCategoryInput {
+  name?: string;
+  slug?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  displayOrder?: number;
+}
+
 export interface Collection {
   id: string;
   title: string;
