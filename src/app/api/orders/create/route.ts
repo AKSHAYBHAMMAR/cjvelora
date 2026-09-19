@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const customerEmail = user.email || '';
     const customerPhone = user.phone || '';
     const body = await req.json();
-    const { items } = body;
+    const { items, couponCode } = body;
     const rawAddress = body.shippingAddress || body.shippingDetails;
 
     // 2. Validate payload items
@@ -183,8 +183,43 @@ export async function POST(req: NextRequest) {
     }
 
     const shippingFee = 0;
-    const discountAmount = 0;
-    const finalTotal = calculatedSubtotal + shippingFee - discountAmount;
+    let discountAmount = 0;
+    let appliedDiscountId: string | null = null;
+    let appliedDiscountCode: string | null = null;
+
+    // 4b. Server-side authoritative coupon validation if couponCode provided
+    if (couponCode && String(couponCode).trim()) {
+      const cleanCode = String(couponCode).trim().toUpperCase();
+      const { data: couponRecord } = await userSupabase
+        .from('discounts')
+        .select('*')
+        .ilike('code', cleanCode)
+        .maybeSingle();
+
+      if (couponRecord && couponRecord.active) {
+        const now = new Date();
+        const startValid = !couponRecord.start_at || new Date(couponRecord.start_at).getTime() <= now.getTime();
+        const endValid = !couponRecord.end_at || new Date(couponRecord.end_at).getTime() >= now.getTime();
+        const minOrderValid = calculatedSubtotal >= Number(couponRecord.minimum_order_amount ?? 0);
+        const usageLimitValid = couponRecord.usage_limit === null || Number(couponRecord.usage_count ?? 0) < Number(couponRecord.usage_limit);
+
+        if (startValid && endValid && minOrderValid && usageLimitValid) {
+          if (couponRecord.discount_type === 'percentage') {
+            discountAmount = Math.round((calculatedSubtotal * Number(couponRecord.discount_value)) / 100);
+            if (couponRecord.maximum_discount_amount && Number(couponRecord.maximum_discount_amount) > 0) {
+              discountAmount = Math.min(discountAmount, Number(couponRecord.maximum_discount_amount));
+            }
+          } else {
+            discountAmount = Math.min(Number(couponRecord.discount_value), calculatedSubtotal);
+          }
+          discountAmount = Math.max(0, discountAmount);
+          appliedDiscountId = couponRecord.id;
+          appliedDiscountCode = cleanCode;
+        }
+      }
+    }
+
+    const finalTotal = Math.max(0, calculatedSubtotal + shippingFee - discountAmount);
     const orderNumber = generateOrderNumber();
 
     let createdOrderId: string | null = null;
@@ -262,6 +297,8 @@ export async function POST(req: NextRequest) {
           subtotal: calculatedSubtotal,
           discount: discountAmount,
           discount_amount: discountAmount,
+          discount_code: appliedDiscountCode,
+          discount_id: appliedDiscountId,
           shipping_fee: shippingFee,
           shipping_amount: shippingFee,
           total_amount: finalTotal,
@@ -321,6 +358,60 @@ export async function POST(req: NextRequest) {
           { success: false, error: `Failed to record order items: ${orderItemsError.message}` },
           { status: 500 }
         );
+      }
+    }
+
+    // 5d. Record discount usage and persist coupon on order if applied
+    if (appliedDiscountId && createdOrderId) {
+      try {
+        // Attempt atomic RPC
+        const { error: usageRpcErr } = await userSupabase.rpc('record_discount_usage', {
+          p_discount_id: appliedDiscountId,
+          p_order_id: createdOrderId,
+          p_customer_id: customerId,
+          p_customer_email: shippingDetails.email,
+          p_discount_amount: discountAmount,
+        });
+
+        if (usageRpcErr) {
+          // Fallback: update usage_count on discounts and insert discount_usages record
+          const { data: currentDiscount } = await userSupabase
+            .from('discounts')
+            .select('usage_count')
+            .eq('id', appliedDiscountId)
+            .single();
+
+          const newUsage = ((currentDiscount?.usage_count ?? 0) as number) + 1;
+
+          await userSupabase
+            .from('discounts')
+            .update({
+              usage_count: newUsage,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', appliedDiscountId);
+
+          await userSupabase.from('discount_usages').insert({
+            discount_id: appliedDiscountId,
+            order_id: createdOrderId,
+            customer_id: customerId,
+            customer_email: shippingDetails.email.toLowerCase().trim(),
+            discount_amount: discountAmount,
+          });
+        }
+
+        // Explicitly ensure order record preserves discount_code and discount_id
+        await userSupabase
+          .from('orders')
+          .update({
+            discount_code: appliedDiscountCode,
+            discount_id: appliedDiscountId,
+            discount: discountAmount,
+            discount_amount: discountAmount,
+          })
+          .eq('id', createdOrderId);
+      } catch (discErr) {
+        console.warn('Notice: Failed to record discount usage log:', discErr);
       }
     }
 

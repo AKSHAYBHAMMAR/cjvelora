@@ -192,6 +192,7 @@ export interface AdminOrder {
 
   subtotal: number;
   discount: number;
+  discountCode?: string;
   shipping: number;
   total: number;
 
@@ -229,5 +230,68 @@ export interface AdminCustomerSummary {
 export interface AdminCustomerDetail extends AdminCustomerSummary {
   shippingAddresses: AdminCustomerShippingAddress[];
   orders: AdminOrder[];
+}
+
+export type DiscountType = 'percentage' | 'fixed_amount';
+
+export interface Discount {
+  id: string;
+  code: string;
+  description: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minimumOrderAmount: number;
+  maximumDiscountAmount?: number | null;
+  startAt: string;
+  endAt?: string | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  perCustomerLimit?: number | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDiscountInput {
+  code: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minimumOrderAmount?: number;
+  maximumDiscountAmount?: number | null;
+  startAt?: string;
+  endAt?: string | null;
+  usageLimit?: number | null;
+  perCustomerLimit?: number | null;
+  active?: boolean;
+}
+
+export interface UpdateDiscountInput {
+  code?: string;
+  description?: string;
+  discountType?: DiscountType;
+  discountValue?: number;
+  minimumOrderAmount?: number;
+  maximumDiscountAmount?: number | null;
+  startAt?: string;
+  endAt?: string | null;
+  usageLimit?: number | null;
+  perCustomerLimit?: number | null;
+  active?: boolean;
+}
+
+export interface ValidateCouponResult {
+  valid: boolean;
+  discount?: {
+    id: string;
+    code: string;
+    description: string;
+    discountType: DiscountType;
+    discountValue: number;
+  };
+  discountAmount?: number;
+  finalTotal?: number;
+  message?: string;
+  error?: string;
 }
 

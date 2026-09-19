@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Users,
   Layers,
+  Tag,
   Settings,
   LogOut,
   ShieldCheck,
@@ -28,6 +29,7 @@ const NAVIGATION_ITEMS = [
   { name: 'Inventory', href: '/admin/inventory', icon: Boxes, implemented: true },
   { name: 'Customers', href: '/admin/customers', icon: Users, implemented: true },
   { name: 'Categories', href: '/admin/categories', icon: Layers, implemented: true },
+  { name: 'Discounts', href: '/admin/discounts', icon: Tag, implemented: true },
   { name: 'Settings', href: '#settings-future', icon: Settings, implemented: false, phase: 'Phase 3' },
 ];
 

@@ -93,6 +93,7 @@ export function mapSupabaseOrder(row: any, items: any[] = []): AdminOrder {
 
     subtotal: Number(subtotal),
     discount: Number(discount),
+    discountCode: row.discount_code || row.coupon_code || undefined,
     shipping: Number(shipping),
     total: Number(total),
 
