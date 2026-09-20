@@ -12,6 +12,7 @@ import {
   Users,
   Layers,
   Tag,
+  BarChart3,
   Settings,
   LogOut,
   ShieldCheck,
@@ -24,6 +25,7 @@ import {
 
 const NAVIGATION_ITEMS = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, implemented: true },
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, implemented: true },
   { name: 'Orders', href: '/admin/orders', icon: ClipboardList, implemented: true },
   { name: 'Products', href: '/admin/products', icon: ShoppingBag, implemented: true },
   { name: 'Inventory', href: '/admin/inventory', icon: Boxes, implemented: true },
