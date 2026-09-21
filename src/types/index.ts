@@ -295,3 +295,4 @@ export interface ValidateCouponResult {
   error?: string;
 }
 
+export * from './settings';

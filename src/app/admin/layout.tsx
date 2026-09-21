@@ -23,7 +23,15 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-const NAVIGATION_ITEMS = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  implemented: boolean;
+  phase?: string;
+}
+
+const NAVIGATION_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, implemented: true },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, implemented: true },
   { name: 'Orders', href: '/admin/orders', icon: ClipboardList, implemented: true },
@@ -32,7 +40,7 @@ const NAVIGATION_ITEMS = [
   { name: 'Customers', href: '/admin/customers', icon: Users, implemented: true },
   { name: 'Categories', href: '/admin/categories', icon: Layers, implemented: true },
   { name: 'Discounts', href: '/admin/discounts', icon: Tag, implemented: true },
-  { name: 'Settings', href: '#settings-future', icon: Settings, implemented: false, phase: 'Phase 3' },
+  { name: 'Settings', href: '/admin/settings', icon: Settings, implemented: true },
 ];
 
 export default function AdminLayout({
