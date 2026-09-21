@@ -4,14 +4,31 @@ import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 
+import { HeroContent } from '@/types/content';
+
 interface HeroProps {
   videoSrc?: string;
+  content?: HeroContent;
 }
 
 export default function Hero({
   videoSrc = '/videos/velora-hero.mp4',
+  content,
 }: HeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const activeVideo = content?.backgroundMedia || videoSrc;
+  const heading = content?.heading || 'Made by Hand.\nMeant to Be Loved.';
+  const subheading =
+    content?.subheading ||
+    'Step into the serene universe of VELORA. Thoughtfully handcrafted crochet pieces designed to bring warmth, character, and tactile magic into everyday life.';
+  const ctaText = content?.ctaText || 'Explore Collection';
+  const ctaLink = content?.ctaLink || '#categories';
+  const secondaryCtaText = content?.secondaryCtaText || 'Our Story';
+  const secondaryCtaLink = content?.secondaryCtaLink || '#about';
+
+  // Format heading with line breaks and italic accent
+  const headingLines = heading.split('\n');
 
   useEffect(() => {
     // Ensure muted video plays automatically in all browsers
@@ -21,6 +38,10 @@ export default function Hero({
       });
     }
   }, []);
+
+  if (content && content.enabled === false) {
+    return null;
+  }
 
   return (
     <section
@@ -34,33 +55,37 @@ export default function Hero({
 
           {/* Luxury Editorial Headline */}
           <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold leading-[1.12] text-charcoal tracking-tight">
-            Made by Hand.<br />
-            <span className="italic font-normal text-olive-accent">
-              Meant to Be Loved.
-            </span>
+            {headingLines[0]}
+            {headingLines[1] && (
+              <>
+                <br />
+                <span className="italic font-normal text-olive-accent">
+                  {headingLines[1]}
+                </span>
+              </>
+            )}
           </h1>
 
           {/* Supporting Philosophy */}
           <p className="font-sans text-sm sm:text-base lg:text-lg text-charcoal/80 font-light leading-relaxed max-w-xl">
-            Step into the serene universe of <strong className="font-medium text-charcoal">VELORA</strong>. 
-            Thoughtfully handcrafted crochet pieces designed to bring warmth, character, and tactile magic into everyday life.
+            {subheading}
           </p>
 
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
             <Link
-              href="#categories"
+              href={ctaLink}
               className="bg-navy text-ivory font-sans text-xs uppercase tracking-widest px-6 sm:px-8 py-3.5 sm:py-4 rounded-full hover:bg-soft-gold hover:text-navy transition-all duration-300 shadow-luxury flex items-center gap-3 group cursor-pointer"
             >
-              <span>Explore Collection</span>
+              <span>{ctaText}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
 
             <Link
-              href="#about"
+              href={secondaryCtaLink}
               className="glass-panel text-charcoal border border-charcoal/20 font-sans text-xs uppercase tracking-widest px-6 sm:px-8 py-3.5 sm:py-4 rounded-full hover:bg-white hover:border-soft-gold transition-all duration-300"
             >
-              Our Story
+              {secondaryCtaText}
             </Link>
           </div>
 
@@ -104,7 +129,7 @@ export default function Hero({
               preload="auto"
               className="w-full h-full object-cover rounded-2xl sm:rounded-3xl"
             >
-              <source src={videoSrc} type="video/mp4" />
+              <source src={activeVideo} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
 

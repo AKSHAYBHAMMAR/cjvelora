@@ -7,6 +7,9 @@ import { Search, Heart, ShoppingBag, Menu, X, User, LogOut } from 'lucide-react'
 import { useStore } from '@/lib/store';
 import { getCustomerProfile, signOutCustomer, CustomerProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import AnnouncementBar from '@/components/layout/AnnouncementBar';
+import { AnnouncementBarContent } from '@/types/content';
+import { getStorefrontContent } from '@/lib/content';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -26,6 +29,7 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
+  const [announcement, setAnnouncement] = useState<AnnouncementBarContent | null>(null);
 
   // Sync cart & wishlist counts
   useEffect(() => {
@@ -58,6 +62,18 @@ export default function Navbar() {
     }
 
     loadCustomer();
+
+    async function loadContent() {
+      try {
+        const content = await getStorefrontContent();
+        if (isMounted && content.announcementBar) {
+          setAnnouncement(content.announcementBar);
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+    loadContent();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
       if (isMounted) {
@@ -116,14 +132,15 @@ export default function Navbar() {
         className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${
           isDarkHeader
             ? scrolled
-              ? 'bg-[#0a0e14]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3'
-              : 'bg-[#0a0e14]/85 backdrop-blur-md border-b border-white/10 py-5'
+              ? 'bg-[#0a0e14]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl pb-3'
+              : 'bg-[#0a0e14]/85 backdrop-blur-md border-b border-white/10 pb-4'
             : scrolled
-              ? 'glass-panel shadow-md py-3'
-              : 'bg-transparent py-5'
+              ? 'glass-panel shadow-md pb-3'
+              : 'bg-transparent pb-4'
         }`}
       >
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 md:px-12 flex items-center justify-between">
+        {announcement && <AnnouncementBar initialContent={announcement} />}
+        <div className={`max-w-[1600px] mx-auto px-3 sm:px-6 md:px-12 flex items-center justify-between ${announcement?.enabled ? 'pt-2.5 sm:pt-3' : 'pt-4 sm:pt-5'}`}>
           
           {/* Left Navigation Links */}
           <nav

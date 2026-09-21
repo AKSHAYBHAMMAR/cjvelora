@@ -13,6 +13,7 @@ import {
   Layers,
   Tag,
   BarChart3,
+  LayoutTemplate,
   Settings,
   LogOut,
   ShieldCheck,
@@ -40,6 +41,7 @@ const NAVIGATION_ITEMS: NavItem[] = [
   { name: 'Customers', href: '/admin/customers', icon: Users, implemented: true },
   { name: 'Categories', href: '/admin/categories', icon: Layers, implemented: true },
   { name: 'Discounts', href: '/admin/discounts', icon: Tag, implemented: true },
+  { name: 'Content', href: '/admin/content', icon: LayoutTemplate, implemented: true },
   { name: 'Settings', href: '/admin/settings', icon: Settings, implemented: true },
 ];
 

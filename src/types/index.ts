@@ -296,3 +296,4 @@ export interface ValidateCouponResult {
 }
 
 export * from './settings';
+export * from './content';
