@@ -9,6 +9,7 @@ import FAQSection from '@/components/home/FAQSection';
 import ContactSection from '@/components/home/ContactSection';
 import PromotionalBannerSection from '@/components/home/PromotionalBannerSection';
 import { getStorefrontContent } from '@/lib/content';
+import { isOfferActive } from '@/lib/offers';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,17 +51,19 @@ export default async function HomePage() {
       </div>
 
       {/* 2. PRODUCT SECTION: Shop by Category & Most Loved by You ❤️ */}
-      <ProductSection />
+      <ProductSection banners={content.banners} />
 
-      {/* Active Promotional Banners (if configured in CMS) */}
-      {content.banners && content.banners.length > 0 && (
-        <PromotionalBannerSection banners={content.banners} />
+      {/* Active Promotional Banners (if configured and currently active) */}
+      {content.banners?.some((b) => isOfferActive(b)) && (
+        <>
+          <PromotionalBannerSection banners={content.banners} />
+
+          {/* Stitched Seam Divider */}
+          <div className="max-w-7xl mx-auto px-6 md:px-12 my-6">
+            <div className="stitched-divider" />
+          </div>
+        </>
       )}
-
-      {/* Stitched Seam Divider */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 my-6">
-        <div className="stitched-divider" />
-      </div>
 
       {/* 3. Atelier Story & Bento Grid */}
       <AtelierStory content={content.about} />

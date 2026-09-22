@@ -6,6 +6,9 @@ import {
   createRazorpayOrder,
   getRazorpayKeyId,
 } from '@/lib/razorpay';
+import { resolveProductOfferPricing } from '@/lib/offers';
+import { DEFAULT_BANNERS } from '@/lib/content';
+import { PromotionalBanner } from '@/types/content';
 
 function generateOrderNumber(): string {
   const now = new Date();
@@ -95,17 +98,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Fetch authoritative product prices and inventory availability
+    // 4. Fetch authoritative product prices, category relations, inventory availability, and active promotional offers
     const productIds = items.map((i: any) => i.productId);
-    const [productsRes, inventoryRes] = await Promise.all([
+    const [productsRes, inventoryRes, bannersRes] = await Promise.all([
       userSupabase
         .from('products')
-        .select('id, name, slug, price, is_published, in_stock, image_url, image')
+        .select('id, name, slug, price, is_published, in_stock, image_url, image, category_id, badge, is_most_loved, is_best_seller, categories(id, name, slug)')
         .in('id', productIds),
       userSupabase
         .from('inventory')
         .select('product_id, quantity, reserved_quantity, low_stock_threshold')
         .in('product_id', productIds),
+      userSupabase
+        .from('promotional_banners')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
     ]);
 
     if (productsRes.error || !productsRes.data) {
@@ -114,6 +122,34 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Resolve active promotional banners for server-authoritative discount validation
+    const activeBanners: PromotionalBanner[] =
+      bannersRes.data && bannersRes.data.length > 0
+        ? bannersRes.data.map((b: any) => ({
+            id: String(b.id),
+            title: b.title || '',
+            description: b.description || '',
+            imageUrl: b.image_url || '',
+            ctaText: b.cta_text || '',
+            ctaLink: b.cta_link || '',
+            active: b.is_active ?? b.active ?? true,
+            displayOrder: Number(b.display_order ?? 0),
+            startDate: b.start_date || undefined,
+            endDate: b.end_date || undefined,
+            badge: b.badge || undefined,
+            discountType: b.discount_type || 'percentage',
+            discountValue:
+              b.discount_value !== null && b.discount_value !== undefined
+                ? Number(b.discount_value)
+                : undefined,
+            collectionId: b.collection_id || undefined,
+            collectionName: b.collection_name || undefined,
+            collectionSlug: b.collection_slug || undefined,
+            createdAt: b.created_at || new Date().toISOString(),
+            updatedAt: b.updated_at || new Date().toISOString(),
+          }))
+        : DEFAULT_BANNERS;
 
     const productsMap = new Map<string, any>(productsRes.data.map((p: any) => [p.id, p]));
     const inventoryMap = new Map<string, any>((inventoryRes.data || []).map((inv: any) => [inv.product_id, inv]));
@@ -168,7 +204,29 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const unitPrice = Number(product.price);
+      // Server-authoritative offer pricing: check eligibility and compute discounted price
+      const basePrice = Number(product.price);
+      const categoryRel = Array.isArray(product.categories) ? product.categories[0] : product.categories;
+      const productForPricing: any = {
+        id: product.id,
+        name: product.name,
+        category: categoryRel?.name || '',
+        categorySlug: categoryRel?.slug || '',
+        categoryId: product.category_id || '',
+        price: basePrice,
+        isMostLoved: Boolean(product.is_most_loved ?? product.is_best_seller),
+        badge: product.badge,
+        images: [product.image_url || product.image || ''],
+        image: product.image_url || product.image || '',
+        description: '',
+        materials: '',
+        rating: 5,
+        reviewCount: 1,
+        inStock: true,
+      };
+
+      const offerPricing = resolveProductOfferPricing(productForPricing, activeBanners);
+      const unitPrice = offerPricing.isDiscounted ? offerPricing.finalPrice : basePrice;
       const lineSubtotal = unitPrice * requestedQty;
       calculatedSubtotal += lineSubtotal;
 

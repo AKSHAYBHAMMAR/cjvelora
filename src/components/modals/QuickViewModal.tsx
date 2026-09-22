@@ -21,6 +21,16 @@ export default function QuickViewModal() {
 
   const inWish = isInWishlist(quickViewProduct.id);
   const currentColor = selectedColor || quickViewProduct.colors?.[0] || '';
+  const isDiscounted = Boolean(
+    quickViewProduct.originalPrice && quickViewProduct.originalPrice > quickViewProduct.price
+  );
+  const discountPct = isDiscounted
+    ? Math.round(
+        ((quickViewProduct.originalPrice! - quickViewProduct.price) /
+          quickViewProduct.originalPrice!) *
+          100
+      )
+    : 0;
 
   const handleAdd = () => {
     addToCart(quickViewProduct, 1, currentColor);
@@ -55,11 +65,15 @@ export default function QuickViewModal() {
               alt={quickViewProduct.name}
               className="w-full h-full object-cover"
             />
-            {quickViewProduct.badge && (
+            {isDiscounted && discountPct > 0 ? (
+              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 font-tech text-[9px] sm:text-[10px] uppercase tracking-wider bg-soft-gold text-charcoal backdrop-blur-md px-2.5 py-1 rounded-full font-bold shadow-md">
+                {discountPct}% OFF ATELIER OFFER
+              </span>
+            ) : quickViewProduct.badge ? (
               <span className="absolute top-3 left-3 sm:top-4 sm:left-4 font-tech text-[9px] sm:text-[10px] uppercase tracking-wider bg-navy/90 text-ivory backdrop-blur-md px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full font-medium shadow-sm">
                 {quickViewProduct.badge}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Details */}
@@ -72,13 +86,18 @@ export default function QuickViewModal() {
               {quickViewProduct.name}
             </h3>
 
-            <div className="flex items-baseline gap-2 sm:gap-3">
+            <div className="flex items-baseline flex-wrap gap-2 sm:gap-3">
               <span className="font-tech text-xl sm:text-2xl font-bold text-navy">
                 ₹{quickViewProduct.price.toLocaleString('en-IN')}
               </span>
-              {quickViewProduct.originalPrice && (
+              {isDiscounted && (
                 <span className="font-tech text-xs sm:text-sm text-charcoal/40 line-through">
-                  ₹{quickViewProduct.originalPrice.toLocaleString('en-IN')}
+                  ₹{quickViewProduct.originalPrice!.toLocaleString('en-IN')}
+                </span>
+              )}
+              {isDiscounted && discountPct > 0 && (
+                <span className="font-tech text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                  {discountPct}% OFF
                 </span>
               )}
             </div>

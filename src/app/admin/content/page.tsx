@@ -45,6 +45,12 @@ import {
 import { getCategories } from '@/lib/categories';
 import { getProducts } from '@/lib/products';
 import {
+  isOfferActive,
+  getOfferStatus,
+  getCollectionRoute,
+  STANDARD_COLLECTIONS,
+} from '@/lib/offers';
+import {
   AllContentData,
   AnnouncementBarContent,
   HeroContent,
@@ -107,8 +113,14 @@ export default function AdminContentPage() {
     title: '',
     description: '',
     imageUrl: '',
-    ctaText: 'Shop New Arrivals',
+    ctaText: 'Explore Collection',
     ctaLink: '/#categories',
+    badge: 'LIMITED ATELIER EDITION',
+    discountType: 'percentage',
+    discountValue: 10,
+    collectionId: 'crochet-bags',
+    collectionName: 'Crochet Bags',
+    collectionSlug: 'crochet-bags',
     active: true,
     displayOrder: 1,
     startDate: null,
@@ -256,16 +268,22 @@ export default function AdminContentPage() {
   };
 
   // ---------------------------------------------------------------------------
-  // Banner Handlers
+  // 3. PROMOTIONAL BANNERS ACTIONS
   // ---------------------------------------------------------------------------
   const openCreateBannerModal = () => {
     setEditingBanner(null);
     setBannerForm({
-      title: '',
-      description: '',
+      title: 'The Monsoon Heirloom Drop',
+      description: 'Artisan handcrafted crochet bags woven with reinforced double-loop knots and organic botanical yarn.',
       imageUrl: '/images/story/story-secondary.jpg',
-      ctaText: 'Shop New Arrivals',
+      ctaText: 'Explore Collection',
       ctaLink: '/#categories',
+      badge: 'LIMITED ATELIER EDITION',
+      discountType: 'percentage',
+      discountValue: 10,
+      collectionId: allCategories[0]?.id || 'crochet-bags',
+      collectionName: allCategories[0]?.name || 'Crochet Bags',
+      collectionSlug: allCategories[0]?.slug || 'crochet-bags',
       active: true,
       displayOrder: (content?.banners.length || 0) + 1,
       startDate: null,
@@ -280,8 +298,14 @@ export default function AdminContentPage() {
       title: banner.title,
       description: banner.description || '',
       imageUrl: banner.imageUrl || '',
-      ctaText: banner.ctaText || '',
-      ctaLink: banner.ctaLink || '',
+      ctaText: banner.ctaText || 'Explore Collection',
+      ctaLink: banner.ctaLink || getCollectionRoute(banner.collectionSlug, banner.collectionName),
+      badge: banner.badge || 'LIMITED ATELIER EDITION',
+      discountType: (banner.discountType as any) || 'percentage',
+      discountValue: Number(banner.discountValue ?? 10),
+      collectionId: banner.collectionId || '',
+      collectionName: banner.collectionName || '',
+      collectionSlug: banner.collectionSlug || '',
       active: banner.active,
       displayOrder: banner.displayOrder,
       startDate: banner.startDate ? banner.startDate.slice(0, 10) : null,
@@ -1035,92 +1059,204 @@ export default function AdminContentPage() {
       )}
 
       {/* ===================================================================== */}
-      {/* 3. PROMOTIONAL BANNERS */}
+      {/* 3. PROMOTIONAL BANNERS & AUTOMATIC OFFER SYSTEM */}
       {/* ===================================================================== */}
       {activeTab === 'banners' && (
-        <div className="space-y-6">
-          {content.banners.length === 0 ? (
-            <div className="p-12 text-center rounded-2xl bg-[#14171A] border border-white/10 space-y-4">
-              <Tag className="w-12 h-12 text-soft-gold/40 mx-auto" />
-              <div className="space-y-1">
-                <h3 className="font-serif text-lg text-white">No Active Promotional Banners</h3>
-                <p className="text-xs text-ivory/50 max-w-sm mx-auto">
-                  Create seasonal drop announcements, holiday sales, or heirloom product teasers.
-                </p>
-              </div>
-              <button
-                onClick={openCreateBannerModal}
-                className="px-4 py-2.5 rounded-xl bg-soft-gold text-charcoal font-semibold text-xs uppercase tracking-wider inline-flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Banner</span>
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {content.banners.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-[#14171A] border border-white/10 rounded-2xl overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-tech text-[10px] uppercase font-bold text-soft-gold bg-soft-gold/15 px-2.5 py-1 rounded-full border border-soft-gold/30">
-                        Order: {b.displayOrder}
-                      </span>
-                      <span
-                        className={`font-tech text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
-                          b.active
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-white/10 text-ivory/50 border-white/10'
-                        }`}
-                      >
-                        {b.active ? 'Published' : 'Inactive'}
-                      </span>
-                    </div>
+        <div className="space-y-8">
+          {/* Section 19: Admin Live Preview Component */}
+          {content.banners.length > 0 && (() => {
+            const previewBanner = content.banners.find((b) => isOfferActive(b)) || content.banners[0];
+            const status = getOfferStatus(previewBanner);
+            const statusColors = {
+              ACTIVE: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+              SCHEDULED: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+              EXPIRED: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+              DISABLED: 'bg-white/10 text-ivory/50 border-white/20',
+            };
 
-                    {b.imageUrl && (
-                      <div className="h-44 rounded-xl overflow-hidden relative">
-                        <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover" />
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-soft-gold" />
+                    <span className="font-tech text-xs uppercase tracking-wider text-ivory/70">
+                      Live Storefront Offer Preview (Section 19)
+                    </span>
+                  </div>
+                  <span className={`font-tech text-[10px] uppercase tracking-wider px-3 py-1 rounded-full border font-bold ${statusColors[status]}`}>
+                    Status: {status}
+                  </span>
+                </div>
+
+                <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-br from-[#121518] to-[#1E232A] text-ivory border border-white/10 shadow-2xl p-6 sm:p-10">
+                  <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-6">
+                    <div className="md:col-span-7 space-y-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-soft-gold/15 border border-soft-gold/30 text-soft-gold font-tech text-[10px] uppercase tracking-[0.25em] font-semibold">
+                          <Tag className="w-3 h-3" />
+                          <span>{previewBanner.badge || 'LIMITED ATELIER EDITION'}</span>
+                        </div>
+                        {Number(previewBanner.discountValue || 0) > 0 && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-tech text-[10px] uppercase tracking-wider font-bold">
+                            {previewBanner.discountValue}% OFF
+                          </span>
+                        )}
                       </div>
-                    )}
 
-                    <div className="space-y-1">
-                      <h4 className="font-serif text-lg font-semibold text-white">{b.title}</h4>
-                      {b.description && (
-                        <p className="text-xs text-ivory/70 line-clamp-2 leading-relaxed font-light">
-                          {b.description}
+                      <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+                        {previewBanner.title}
+                      </h3>
+
+                      {previewBanner.description && (
+                        <p className="font-sans text-xs sm:text-sm text-ivory/70 leading-relaxed max-w-xl font-light">
+                          {previewBanner.description}
                         </p>
                       )}
+
+                      <div className="flex flex-wrap items-center gap-4 pt-2">
+                        <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-soft-gold text-charcoal font-sans text-xs uppercase tracking-widest font-bold shadow-luxury">
+                          <span>EXPLORE COLLECTION →</span>
+                        </span>
+                        <span className="text-xs text-ivory/60 font-tech">
+                          Collection: <strong className="text-white">{previewBanner.collectionName || 'All Catalog'}</strong>
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] text-ivory/40 font-mono pt-1 flex flex-wrap gap-4 border-t border-white/5">
+                        <span>Start: {previewBanner.startDate ? new Date(previewBanner.startDate).toLocaleDateString('en-IN') : 'Immediate'}</span>
+                        <span>End: {previewBanner.endDate ? new Date(previewBanner.endDate).toLocaleDateString('en-IN') : 'No Expiry'}</span>
+                      </div>
                     </div>
 
-                    {b.ctaText && (
-                      <div className="text-[11px] font-tech text-soft-gold uppercase tracking-wider">
-                        CTA: {b.ctaText} ({b.ctaLink})
+                    {previewBanner.imageUrl && (
+                      <div className="md:col-span-5 h-48 sm:h-64 rounded-2xl overflow-hidden relative border border-white/10">
+                        <img
+                          src={previewBanner.imageUrl}
+                          alt={previewBanner.title}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
                   </div>
-
-                  <div className="p-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => openEditBannerModal(b)}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-ivory/80 text-xs flex items-center gap-1.5 transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => setDeletingBanner(b)}
-                      className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs flex items-center gap-1.5 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
-                  </div>
                 </div>
-              ))}
+              </div>
+            );
+          })()}
+
+          {/* Configured Banners Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-base font-semibold text-white">Configured Offers & Banners</h3>
+              <button
+                onClick={openCreateBannerModal}
+                className="px-4 py-2 rounded-xl bg-soft-gold text-charcoal text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-luxury hover:bg-soft-gold/90 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Offer</span>
+              </button>
             </div>
-          )}
+
+            {content.banners.length === 0 ? (
+              <div className="p-12 text-center rounded-2xl bg-[#14171A] border border-white/10 space-y-4">
+                <Tag className="w-12 h-12 text-soft-gold/40 mx-auto" />
+                <div className="space-y-1">
+                  <h3 className="font-serif text-lg text-white">No Promotional Offers Configured</h3>
+                  <p className="text-xs text-ivory/50 max-w-sm mx-auto">
+                    Configure a seasonal promotional offer with automatic collection percentage discounts.
+                  </p>
+                </div>
+                <button
+                  onClick={openCreateBannerModal}
+                  className="px-4 py-2.5 rounded-xl bg-soft-gold text-charcoal font-semibold text-xs uppercase tracking-wider inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create First Offer</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {content.banners.map((b) => {
+                  const status = getOfferStatus(b);
+                  const statusBadgeClass = {
+                    ACTIVE: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                    SCHEDULED: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                    EXPIRED: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                    DISABLED: 'bg-white/10 text-ivory/50 border-white/10',
+                  }[status];
+
+                  return (
+                    <div
+                      key={b.id}
+                      className="bg-[#14171A] border border-white/10 rounded-2xl overflow-hidden flex flex-col justify-between"
+                    >
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-tech text-[10px] uppercase font-bold text-soft-gold bg-soft-gold/15 px-2.5 py-1 rounded-full border border-soft-gold/30">
+                              Order: {b.displayOrder}
+                            </span>
+                            {Number(b.discountValue || 0) > 0 && (
+                              <span className="font-tech text-[10px] uppercase font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/40">
+                                {b.discountValue}% OFF
+                              </span>
+                            )}
+                          </div>
+                          <span className={`font-tech text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full border ${statusBadgeClass}`}>
+                            {status}
+                          </span>
+                        </div>
+
+                        {b.imageUrl && (
+                          <div className="h-44 rounded-xl overflow-hidden relative border border-white/5">
+                            <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-tech tracking-wider text-soft-gold block">
+                            {b.badge || 'Limited Atelier Edition'}
+                          </span>
+                          <h4 className="font-serif text-lg font-semibold text-white">{b.title}</h4>
+                          {b.description && (
+                            <p className="text-xs text-ivory/70 line-clamp-2 leading-relaxed font-light">
+                              {b.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xs space-y-1">
+                          <div className="text-ivory/80">
+                            Collection: <strong className="text-white">{b.collectionName || 'All Products'}</strong>
+                          </div>
+                          <div className="text-[11px] text-ivory/50 flex items-center justify-between pt-1">
+                            <span>Button: EXPLORE COLLECTION →</span>
+                            <span>{b.startDate ? `Starts: ${b.startDate.slice(0, 10)}` : 'Active now'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditBannerModal(b)}
+                          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-ivory/80 text-xs flex items-center gap-1.5 transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => setDeletingBanner(b)}
+                          className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs flex items-center gap-1.5 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1727,34 +1863,233 @@ export default function AdminContentPage() {
                 </div>
               </div>
 
+              {/* Atelier Badge */}
+              <div className="space-y-1.5">
+                <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
+                  Atelier Badge Label
+                </label>
+                <input
+                  type="text"
+                  value={bannerForm.badge || ''}
+                  onChange={(e) => setBannerForm((prev) => ({ ...prev, badge: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold uppercase tracking-wider"
+                  placeholder="LIMITED ATELIER EDITION"
+                />
+              </div>
+
+              {/* Headline */}
+              <div className="space-y-1.5">
+                <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
+                  Offer Headline *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={bannerForm.title}
+                  onChange={(e) => setBannerForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold"
+                  placeholder="The Monsoon Heirloom Drop"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
+                  Description Copy
+                </label>
+                <textarea
+                  rows={2}
+                  value={bannerForm.description || ''}
+                  onChange={(e) => setBannerForm((prev) => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold resize-none"
+                  placeholder="Artisan handcrafted crochet bags woven with reinforced double-loop knots..."
+                />
+              </div>
+
+              {/* DISCOUNT CONFIGURATION (Sections 1 & 6) */}
+              <div className="p-4 rounded-xl bg-soft-gold/5 border border-soft-gold/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-tech text-xs uppercase tracking-wider font-bold text-soft-gold">
+                      Promotional Discount Configuration
+                    </p>
+                    <p className="text-[11px] text-ivory/60">
+                      Automatic product discount applied to all eligible items in the selected collection.
+                    </p>
+                  </div>
+                  <span className="font-tech text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/30">
+                    {bannerForm.discountValue || 0}% OFF
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={bannerForm.discountValue ?? 0}
+                        onChange={(e) => {
+                          const val = Math.min(100, Math.max(0, parseInt(e.target.value, 10) || 0));
+                          setBannerForm((prev) => ({ ...prev, discountValue: val }));
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-tech font-bold focus:outline-none focus:border-soft-gold"
+                        placeholder="10"
+                      />
+                      <span className="absolute right-3.5 top-2.5 text-xs text-ivory/50 font-tech font-bold">%</span>
+                    </div>
+
+                    {/* Presets: 5%, 10%, 15%, 20%, 25% */}
+                    <div className="flex items-center gap-1.5">
+                      {[5, 10, 15, 20, 25].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setBannerForm((prev) => ({ ...prev, discountValue: preset }))}
+                          className={`px-2.5 py-2 rounded-lg text-xs font-tech font-bold transition-all ${
+                            bannerForm.discountValue === preset
+                              ? 'bg-soft-gold text-charcoal'
+                              : 'bg-white/5 text-ivory/70 hover:bg-white/10 hover:text-white border border-white/10'
+                          }`}
+                        >
+                          {preset}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dynamic calculation example display */}
+                  <div className="text-[11px] font-mono text-emerald-400/90 bg-black/40 p-2 rounded-lg border border-emerald-500/20">
+                    Example: ₹1,000 product &rarr; -₹{Math.round((1000 * (bannerForm.discountValue || 0)) / 100)} discount &rarr;{' '}
+                    <strong className="text-white">
+                      ₹{Math.max(0, 1000 - Math.round((1000 * (bannerForm.discountValue || 0)) / 100)).toLocaleString('en-IN')}
+                    </strong>{' '}
+                    offer price
+                  </div>
+                </div>
+              </div>
+
+              {/* COLLECTION SELECTION (Section 3: No URL input) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
+                    Explore Collection Target * (No URL required)
+                  </label>
+                  <span className="text-[10px] text-soft-gold font-tech">Button: EXPLORE COLLECTION →</span>
+                </div>
+                <select
+                  value={bannerForm.collectionSlug || bannerForm.collectionId || ''}
+                  onChange={(e) => {
+                    const selectedVal = e.target.value;
+                    const standardMatch = STANDARD_COLLECTIONS.find((s) => s.slug === selectedVal);
+                    const categoryMatch = allCategories.find((c) => c.slug === selectedVal || c.id === selectedVal);
+
+                    if (standardMatch) {
+                      setBannerForm((prev) => ({
+                        ...prev,
+                        collectionId: standardMatch.id,
+                        collectionName: standardMatch.name,
+                        collectionSlug: standardMatch.slug,
+                        ctaText: 'Explore Collection',
+                        ctaLink: getCollectionRoute(standardMatch.slug, standardMatch.name),
+                      }));
+                    } else if (categoryMatch) {
+                      setBannerForm((prev) => ({
+                        ...prev,
+                        collectionId: categoryMatch.id,
+                        collectionName: categoryMatch.name,
+                        collectionSlug: categoryMatch.slug,
+                        ctaText: 'Explore Collection',
+                        ctaLink: getCollectionRoute(categoryMatch.slug, categoryMatch.name),
+                      }));
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#1D2126] border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold"
+                >
+                  <option value="" disabled>
+                    Select an eligible collection/category...
+                  </option>
+                  <optgroup label="Curated Collections">
+                    {STANDARD_COLLECTIONS.map((c) => (
+                      <option key={c.id} value={c.slug}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Catalog Categories">
+                    {allCategories.map((cat) => (
+                      <option key={cat.id} value={cat.slug || cat.id}>
+                        {cat.name} ({cat.itemCount} items)
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+                <p className="text-[11px] text-ivory/40">
+                  Products in this collection will automatically display discounted prices while the offer is active.
+                </p>
+              </div>
+
+              {/* Banner Visual Asset */}
+              <div className="space-y-1.5">
+                <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
+                  Banner Visual Asset
+                </label>
+                <div className="flex items-center gap-3">
+                  {bannerForm.imageUrl && (
+                    <img
+                      src={bannerForm.imageUrl}
+                      alt="Banner"
+                      className="w-14 h-14 object-cover rounded-xl border border-white/10"
+                    />
+                  )}
+                  <label className="cursor-pointer px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white flex items-center gap-2 transition-colors">
+                    {bannerImageUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-soft-gold" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-soft-gold" />
+                    )}
+                    <span>Upload Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerImageUpload}
+                      className="hidden"
+                      disabled={bannerImageUploading}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Scheduling Windows */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
-                    CTA Button Label
+                    Offer Start Date (Optional)
                   </label>
                   <input
-                    type="text"
-                    value={bannerForm.ctaText || ''}
-                    onChange={(e) => setBannerForm((prev) => ({ ...prev, ctaText: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold"
-                    placeholder="Shop New Arrivals"
+                    type="date"
+                    value={bannerForm.startDate || ''}
+                    onChange={(e) => setBannerForm((prev) => ({ ...prev, startDate: e.target.value || null }))}
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
-                    CTA Target Link
+                    Offer End Date (Expiration)
                   </label>
                   <input
-                    type="text"
-                    value={bannerForm.ctaLink || ''}
-                    onChange={(e) => setBannerForm((prev) => ({ ...prev, ctaLink: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold"
-                    placeholder="/#categories"
+                    type="date"
+                    value={bannerForm.endDate || ''}
+                    onChange={(e) => setBannerForm((prev) => ({ ...prev, endDate: e.target.value || null }))}
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-medium focus:outline-none focus:border-soft-gold"
                   />
                 </div>
               </div>
 
+              {/* Display Order & Active */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-tech text-[10px] uppercase tracking-wider text-ivory/70">
@@ -1799,7 +2134,7 @@ export default function AdminContentPage() {
                   className="px-5 py-2 rounded-xl bg-soft-gold hover:bg-soft-gold/90 text-charcoal text-xs font-bold uppercase tracking-wider flex items-center gap-2"
                 >
                   {bannerSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{editingBanner ? 'Save Changes' : 'Create Banner'}</span>
+                  <span>{editingBanner ? 'Save Changes' : 'Create Offer'}</span>
                 </button>
               </div>
             </form>

@@ -552,6 +552,11 @@ export default function CheckoutPage() {
                         <p className="text-xs font-medium text-[#d4af37]">
                           ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
                         </p>
+                        {item.product.originalPrice && item.product.originalPrice > item.product.price && (
+                          <p className="text-[10px] text-white/40 line-through">
+                            ₹{(item.product.originalPrice * item.quantity).toLocaleString('en-IN')}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}

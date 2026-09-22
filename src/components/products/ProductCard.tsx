@@ -3,19 +3,35 @@
 import React from 'react';
 import { Heart, Eye, ShoppingBag, Star, Sparkles } from 'lucide-react';
 import { Product } from '@/types';
+import { PromotionalBanner } from '@/types/content';
 import { useStore } from '@/lib/store';
+import { resolveProductOfferPricing } from '@/lib/offers';
 
 interface ProductCardProps {
   product: Product;
   highlightMostLoved?: boolean;
+  offers?: PromotionalBanner[];
 }
 
 export default function ProductCard({
   product,
   highlightMostLoved = false,
+  offers,
 }: ProductCardProps) {
   const { addToCart, toggleWishlist, isInWishlist, openQuickView } = useStore();
   const inWish = isInWishlist(product.id);
+
+  const pricing = resolveProductOfferPricing(product, offers);
+  const displayPrice = pricing.finalPrice;
+  const originalPrice = pricing.isDiscounted ? pricing.originalPrice : product.originalPrice;
+
+  const productForAction: Product = pricing.isDiscounted
+    ? {
+        ...product,
+        price: pricing.finalPrice,
+        originalPrice: pricing.originalPrice,
+      }
+    : product;
 
   return (
     <div className="glass-card rounded-2xl sm:rounded-3xl overflow-hidden group flex flex-col h-full border border-white/90 shadow-luxury hover:shadow-luxury-hover transition-all duration-500 bg-white/80">
@@ -34,14 +50,21 @@ export default function ProductCard({
         {/* Badges Top Bar */}
         <div className="absolute top-2.5 left-2.5 right-2.5 sm:top-4 sm:left-4 sm:right-4 flex items-center justify-between pointer-events-none">
           <div className="flex flex-col gap-1 sm:gap-1.5 items-start">
-            {product.isMostLoved && (
+            {pricing.isDiscounted && (
+              <span className="font-tech text-[8px] sm:text-[10px] uppercase tracking-wider bg-soft-gold text-charcoal backdrop-blur-md px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-bold shadow-sm flex items-center gap-1 border border-soft-gold/40">
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-charcoal fill-charcoal" />
+                <span>{pricing.discountPercentage}% OFF</span>
+              </span>
+            )}
+
+            {product.isMostLoved && !pricing.isDiscounted && (
               <span className="font-tech text-[8px] sm:text-[10px] uppercase tracking-wider bg-rose-950/90 text-rose-100 backdrop-blur-md px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-semibold shadow-sm flex items-center gap-1 border border-rose-400/30">
                 <span>Most Loved</span>
                 <span>❤️</span>
               </span>
             )}
 
-            {product.badge && !product.isMostLoved && (
+            {product.badge && !product.isMostLoved && !pricing.isDiscounted && (
               <span className="font-tech text-[8px] sm:text-[10px] uppercase tracking-wider bg-navy/90 text-ivory backdrop-blur-md px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-medium shadow-sm">
                 {product.badge}
               </span>
@@ -70,7 +93,7 @@ export default function ProductCard({
         {/* Hover Quick Actions Shelf */}
         <div className="hidden sm:flex absolute bottom-4 left-4 right-4 items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
           <button
-            onClick={() => openQuickView(product)}
+            onClick={() => openQuickView(productForAction)}
             className="flex-1 glass-panel text-charcoal font-sans text-xs uppercase tracking-wider py-2.5 px-3 rounded-full hover:bg-white hover:text-navy font-semibold flex items-center justify-center gap-1.5 shadow-md backdrop-blur-md transition-all cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
@@ -78,7 +101,7 @@ export default function ProductCard({
           </button>
 
           <button
-            onClick={() => addToCart(product, 1)}
+            onClick={() => addToCart(productForAction, 1)}
             className="flex-1 bg-navy text-ivory font-sans text-xs uppercase tracking-wider py-2.5 px-3 rounded-full hover:bg-soft-gold hover:text-navy font-semibold flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
@@ -107,7 +130,7 @@ export default function ProductCard({
 
           {/* Product Title */}
           <h3
-            onClick={() => openQuickView(product)}
+            onClick={() => openQuickView(productForAction)}
             className="font-serif text-sm xs:text-base sm:text-xl lg:text-2xl font-semibold text-charcoal mb-1 sm:mb-2 group-hover:text-olive-dark transition-colors cursor-pointer leading-snug line-clamp-1"
           >
             {product.name}
@@ -121,19 +144,24 @@ export default function ProductCard({
 
         {/* Price & Primary CTA */}
         <div className="mt-3 sm:mt-6 pt-2.5 sm:pt-4 border-t border-charcoal/10 flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 sm:gap-2">
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
+          <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2">
             <span className="font-tech text-sm xs:text-base sm:text-xl font-bold text-navy">
-              ₹{product.price.toLocaleString('en-IN')}
+              ₹{displayPrice.toLocaleString('en-IN')}
             </span>
-            {product.originalPrice && (
+            {originalPrice && originalPrice > displayPrice && (
               <span className="font-tech text-[10px] sm:text-xs text-charcoal/40 line-through">
-                ₹{product.originalPrice.toLocaleString('en-IN')}
+                ₹{originalPrice.toLocaleString('en-IN')}
+              </span>
+            )}
+            {pricing.isDiscounted && (
+              <span className="font-tech text-[9px] sm:text-[10px] uppercase font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">
+                {pricing.discountPercentage}% OFF
               </span>
             )}
           </div>
 
           <button
-            onClick={() => addToCart(product, 1)}
+            onClick={() => addToCart(productForAction, 1)}
             className="inline-flex items-center gap-1 sm:gap-1.5 font-sans text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest font-semibold text-navy hover:text-soft-gold transition-colors cursor-pointer group/cta self-end xs:self-auto"
             aria-label={`Add ${product.name} to Cart`}
           >

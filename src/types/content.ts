@@ -51,6 +51,12 @@ export interface PromotionalBanner {
   imageUrl?: string;
   ctaText?: string;
   ctaLink?: string;
+  badge?: string;
+  discountType?: 'percentage';
+  discountValue?: number;
+  collectionId?: string | null;
+  collectionName?: string | null;
+  collectionSlug?: string | null;
   active: boolean;
   displayOrder: number;
   startDate?: string | null;
@@ -65,6 +71,12 @@ export interface CreateBannerInput {
   imageUrl?: string;
   ctaText?: string;
   ctaLink?: string;
+  badge?: string;
+  discountType?: 'percentage';
+  discountValue?: number;
+  collectionId?: string | null;
+  collectionName?: string | null;
+  collectionSlug?: string | null;
   active?: boolean;
   displayOrder?: number;
   startDate?: string | null;
@@ -77,6 +89,12 @@ export interface UpdateBannerInput {
   imageUrl?: string;
   ctaText?: string;
   ctaLink?: string;
+  badge?: string;
+  discountType?: 'percentage';
+  discountValue?: number;
+  collectionId?: string | null;
+  collectionName?: string | null;
+  collectionSlug?: string | null;
   active?: boolean;
   displayOrder?: number;
   startDate?: string | null;

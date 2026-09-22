@@ -6,8 +6,13 @@ import { Product } from '@/types';
 import { getMostLovedProducts } from '@/lib/products';
 import ProductCard from './ProductCard';
 import { Heart, Sparkles } from 'lucide-react';
+import { PromotionalBanner } from '@/types/content';
 
-export default function MostLovedSection() {
+interface MostLovedSectionProps {
+  offers?: PromotionalBanner[];
+}
+
+export default function MostLovedSection({ offers }: MostLovedSectionProps = {}) {
   const [mostLovedProducts, setMostLovedProducts] = useState<Product[]>(
     PRODUCTS.filter((p) => p.isMostLoved)
   );
@@ -70,6 +75,7 @@ export default function MostLovedSection() {
             key={product.id}
             product={product}
             highlightMostLoved={true}
+            offers={offers}
           />
         ))}
       </div>

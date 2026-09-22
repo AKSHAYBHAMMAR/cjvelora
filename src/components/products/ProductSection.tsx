@@ -9,9 +9,41 @@ import { Product } from '@/types';
 import { getProducts } from '@/lib/products';
 import { Sparkles, X, Filter, ArrowRight } from 'lucide-react';
 
-export default function ProductSection() {
+import { PromotionalBanner } from '@/types/content';
+
+interface ProductSectionProps {
+  banners?: PromotionalBanner[];
+}
+
+export default function ProductSection({ banners }: ProductSectionProps = {}) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
+
+  // Sync category from URL query parameters (e.g., /?category=Bags#category-products-anchor)
+  useEffect(() => {
+    function handleCategoryFromUrl() {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const cat = params.get('category');
+        if (cat) {
+          setSelectedCategory(decodeURIComponent(cat));
+          setTimeout(() => {
+            const el = document.getElementById('category-products-anchor');
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 150);
+        }
+      }
+    }
+
+    handleCategoryFromUrl();
+    window.addEventListener('popstate', handleCategoryFromUrl);
+    window.addEventListener('hashchange', handleCategoryFromUrl);
+
+    return () => {
+      window.removeEventListener('popstate', handleCategoryFromUrl);
+      window.removeEventListener('hashchange', handleCategoryFromUrl);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -34,9 +66,13 @@ export default function ProductSection() {
     };
   }, []);
 
-  // Filter products by selected category
+  // Filter products by selected category (checking both name and slug)
   const filteredProducts = selectedCategory
-    ? products.filter((p) => p.category === selectedCategory)
+    ? products.filter(
+        (p) =>
+          p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+          p.categorySlug?.toLowerCase() === selectedCategory.toLowerCase()
+      )
     : [];
 
   return (
@@ -95,7 +131,7 @@ export default function ProductSection() {
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} offers={banners} />
               ))}
             </div>
           ) : (
@@ -118,7 +154,7 @@ export default function ProductSection() {
       )}
 
       {/* 2. MOST LOVED PRODUCTS ("Most Loved by You ❤️") */}
-      <MostLovedSection />
+      <MostLovedSection offers={banners} />
 
       </div>
     </div>

@@ -90,9 +90,16 @@ export default function CartDrawer() {
                         {item.selectedColor}
                       </span>
                     )}
-                    <span className="font-tech text-xs text-navy font-bold">
-                      ₹{item.product.price.toLocaleString('en-IN')}
-                    </span>
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="font-tech text-xs text-navy font-bold">
+                        ₹{item.product.price.toLocaleString('en-IN')}
+                      </span>
+                      {item.product.originalPrice && item.product.originalPrice > item.product.price && (
+                        <span className="font-tech text-[10px] text-charcoal/40 line-through">
+                          ₹{item.product.originalPrice.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Quantity Controls */}
