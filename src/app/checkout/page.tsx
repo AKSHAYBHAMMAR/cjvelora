@@ -14,8 +14,6 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Tag,
-  X
 } from 'lucide-react';
 
 export default function CheckoutPage() {
@@ -27,18 +25,6 @@ export default function CheckoutPage() {
   const [user, setUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Coupon state
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{
-    code: string;
-    discountType: string;
-    discountValue: number;
-    discountAmount: number;
-  } | null>(null);
-  const [couponApplying, setCouponApplying] = useState(false);
-  const [couponError, setCouponError] = useState<string | null>(null);
-  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -108,57 +94,8 @@ export default function CheckoutPage() {
 
   // Pricing calculations (display only, server validates authoritative pricing)
   const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
   const shipping = 0; // Complimentary luxury shipping
-  const total = Math.max(0, subtotal + shipping - discountAmount);
-
-  const handleApplyCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanCode = couponInput.trim().toUpperCase();
-    if (!cleanCode) return;
-
-    setCouponApplying(true);
-    setCouponError(null);
-    setCouponSuccess(null);
-
-    try {
-      const res = await fetch('/api/discounts/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: cleanCode,
-          subtotal,
-          customerEmail: formData.email || user?.email,
-          customerId: user?.id,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.valid) {
-        setCouponError(data.error || 'Invalid coupon code.');
-        setAppliedCoupon(null);
-      } else {
-        setAppliedCoupon({
-          code: data.discount.code,
-          discountType: data.discount.discountType,
-          discountValue: data.discount.discountValue,
-          discountAmount: data.discountAmount,
-        });
-        setCouponSuccess(data.message || `Coupon "${data.discount.code}" applied!`);
-        setCouponInput('');
-      }
-    } catch (err: any) {
-      setCouponError(err?.message || 'Error validating coupon code.');
-    } finally {
-      setCouponApplying(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponError(null);
-    setCouponSuccess(null);
-  };
+  const total = subtotal + shipping;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -237,7 +174,6 @@ export default function CheckoutPage() {
             productId: item.product.id,
             quantity: item.quantity,
           })),
-          couponCode: appliedCoupon ? appliedCoupon.code : undefined,
         }),
       });
 
@@ -621,91 +557,12 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {/* Coupon / Promotion Code Section */}
-                <div className="mt-6 pt-4 border-t border-white/10">
-                  {appliedCoupon ? (
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 shrink-0">
-                          <Tag className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-tech text-xs font-bold text-emerald-300 tracking-wide">
-                              {appliedCoupon.code}
-                            </span>
-                            <span className="text-[10px] text-emerald-400/80">
-                              ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`})
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-emerald-400 font-medium">
-                            -₹{appliedCoupon.discountAmount.toLocaleString('en-IN')} discount applied
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveCoupon}
-                        className="p-1.5 rounded-lg text-emerald-400/70 hover:text-white hover:bg-emerald-500/20 transition-colors"
-                        title="Remove coupon"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            type="text"
-                            value={couponInput}
-                            onChange={(e) => setCouponInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
-                            placeholder="PROMO CODE (e.g. WELCOME10)"
-                            className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#d4af37] text-xs uppercase font-tech tracking-wider transition-colors"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleApplyCoupon}
-                          disabled={couponApplying || !couponInput.trim()}
-                          className="px-4 py-2.5 bg-white/10 hover:bg-[#d4af37] hover:text-black border border-white/10 text-white text-xs uppercase tracking-wider font-semibold rounded-xl transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 cursor-pointer"
-                        >
-                          {couponApplying && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                          <span>Apply</span>
-                        </button>
-                      </div>
-
-                      {couponError && (
-                        <p className="text-[11px] text-rose-400 font-sans flex items-center gap-1.5 mt-1">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{couponError}</span>
-                        </p>
-                      )}
-                      {couponSuccess && (
-                        <p className="text-[11px] text-emerald-400 font-sans flex items-center gap-1.5 mt-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                          <span>{couponSuccess}</span>
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 {/* Subtotals & Total */}
                 <div className="mt-6 pt-4 space-y-3 text-xs border-t border-white/10">
                   <div className="flex justify-between text-white/70">
                     <span>Subtotal</span>
                     <span>₹{subtotal.toLocaleString('en-IN')}</span>
                   </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-400 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Tag className="w-3 h-3" />
-                        <span>Discount ({appliedCoupon?.code})</span>
-                      </span>
-                      <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-white/70">
                     <span>White-Glove Insured Delivery</span>
                     <span className="text-emerald-400 uppercase tracking-wider text-[10px] font-semibold">
