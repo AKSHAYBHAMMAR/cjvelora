@@ -162,6 +162,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DES
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON public.order_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_product_id ON public.inventory(product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_razorpay_payment_id_unique
+  ON public.orders (razorpay_payment_id)
+  WHERE razorpay_payment_id IS NOT NULL;
 
 -- ------------------------------------------------------------------------------
 -- 5. ATOMIC RPC: create_order_with_items
@@ -353,8 +356,14 @@ AS $$
 DECLARE
   v_item record;
   v_current_payment_status text;
+  v_existing_payment_id text;
+  v_existing_rz_order_id text;
+  v_order_customer_id uuid;
+  v_caller_id uuid;
 BEGIN
-  SELECT payment_status INTO v_current_payment_status
+  -- 1. Row-level lock on the target order to prevent concurrent race conditions
+  SELECT payment_status, razorpay_payment_id, razorpay_order_id, customer_id
+  INTO v_current_payment_status, v_existing_payment_id, v_existing_rz_order_id, v_order_customer_id
   FROM public.orders
   WHERE id = p_order_id
   FOR UPDATE;
@@ -363,16 +372,42 @@ BEGIN
     RAISE EXCEPTION 'Order with ID % not found.', p_order_id;
   END IF;
 
-  -- Idempotency check: if already paid, return success immediately
-  IF v_current_payment_status = 'paid' THEN
-    RETURN jsonb_build_object(
-      'success', true,
-      'message', 'Order was already verified and marked paid.',
-      'order_id', p_order_id
-    );
+  -- 2. Caller ownership check: authenticated user must match customer_id
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NOT NULL AND v_caller_id <> v_order_customer_id THEN
+    RAISE EXCEPTION 'Unauthorized: You do not own this order.';
   END IF;
 
-  -- Decrement quantity and reserved_quantity for all items in the order
+  -- 3. Authoritative order ID validation against database record
+  IF v_existing_rz_order_id IS NOT NULL AND p_razorpay_order_id IS NOT NULL AND v_existing_rz_order_id <> p_razorpay_order_id THEN
+    RAISE EXCEPTION 'Conflict: Authoritative Razorpay order ID mismatch.';
+  END IF;
+
+  -- 4. Same-order Idempotency Check:
+  -- If order was already paid, check if the payment ID matches
+  IF v_current_payment_status = 'paid' THEN
+    IF v_existing_payment_id = p_razorpay_payment_id THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'message', 'Order was already verified and marked paid.',
+        'order_id', p_order_id
+      );
+    ELSE
+      RAISE EXCEPTION 'Conflict: Order was already finalized with a different payment ID.';
+    END IF;
+  END IF;
+
+  -- 5. Cross-Order Payment ID Replay Protection:
+  -- Reject if this razorpay_payment_id has already been recorded on any other order
+  IF EXISTS (
+    SELECT 1 FROM public.orders
+    WHERE razorpay_payment_id = p_razorpay_payment_id
+      AND id <> p_order_id
+  ) THEN
+    RAISE EXCEPTION 'Conflict: Razorpay payment ID has already been redeemed for another order.';
+  END IF;
+
+  -- 6. Atomic Inventory Conversion: convert reserved stock to permanent sold stock
   FOR v_item IN
     SELECT product_id, quantity
     FROM public.order_items
@@ -385,7 +420,7 @@ BEGIN
     WHERE product_id = v_item.product_id;
   END LOOP;
 
-  -- Update order status
+  -- 7. Mark order as paid and processing
   UPDATE public.orders
   SET payment_status = 'paid',
       status = 'processing',
