@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 /**
  * PATCH /api/admin/products/[productId]/publish
@@ -11,25 +10,9 @@ export async function PATCH(
   { params }: { params: { productId: string } }
 ) {
   try {
-    if (!isSupabaseConfigured) {
-      return NextResponse.json({ success: false, error: 'Database not configured.' }, { status: 503 });
-    }
-
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-    if (!token) {
-      return NextResponse.json({ success: false, error: 'Unauthorized.' }, { status: 401 });
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized session.' }, { status: 401 });
-    }
-
-    const role = await verifyAdminRole(user.id, user.email);
-    if (!role) {
-      return NextResponse.json({ success: false, error: 'Forbidden.' }, { status: 403 });
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const productId = params.productId;
@@ -41,7 +24,7 @@ export async function PATCH(
     if (body.isPublished !== undefined) {
       targetStatus = Boolean(body.isPublished);
     } else {
-      const { data: current, error: fetchErr } = await supabase
+      const { data: current, error: fetchErr } = await db
         .from('products')
         .select('is_published')
         .eq('id', productId)
@@ -54,7 +37,7 @@ export async function PATCH(
       targetStatus = !current.is_published;
     }
 
-    const { data: updated, error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await db
       .from('products')
       .update({ is_published: targetStatus })
       .eq('id', productId)

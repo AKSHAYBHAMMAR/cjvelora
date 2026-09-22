@@ -1,34 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
-
-/**
- * Authenticates the admin session.
- */
-async function authenticateAdmin(req: NextRequest): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 /**
  * PATCH /api/admin/products/[productId]
@@ -39,8 +10,8 @@ export async function PATCH(
   { params }: { params: { productId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -50,7 +21,7 @@ export async function PATCH(
     }
 
     // Verify product existence
-    const { data: existingProduct, error: fetchErr } = await supabase
+    const { data: existingProduct, error: fetchErr } = await db
       .from('products')
       .select('*')
       .eq('id', productId)
@@ -72,7 +43,7 @@ export async function PATCH(
         .replace(/(^-|-$)+/g, '');
 
       if (cleanedSlug && cleanedSlug !== existingProduct.slug) {
-        const { data: conflict } = await supabase
+        const { data: conflict } = await db
           .from('products')
           .select('id')
           .eq('slug', cleanedSlug)
@@ -127,7 +98,9 @@ export async function PATCH(
     // 4. Update products table
     let updatedProduct = existingProduct;
     if (Object.keys(productPayload).length > 0) {
-      const { data: updated, error: updateErr } = await supabase
+      productPayload.updated_at = new Date().toISOString();
+
+      const { data: updated, error: updateErr } = await db
         .from('products')
         .update(productPayload)
         .eq('id', productId)
@@ -146,7 +119,7 @@ export async function PATCH(
     // 5. Stock and Inventory management
     let updatedInventory: any = null;
     if (body.stockQuantity !== undefined || body.lowStockThreshold !== undefined) {
-      const { data: invRow } = await supabase
+      const { data: invRow } = await db
         .from('inventory')
         .select('*')
         .eq('product_id', productId)
@@ -176,7 +149,7 @@ export async function PATCH(
       }
 
       if (invRow) {
-        const { data: invUpdated, error: invErr } = await supabase
+        const { data: invUpdated, error: invErr } = await db
           .from('inventory')
           .update({
             quantity: newQuantity,
@@ -193,7 +166,7 @@ export async function PATCH(
           updatedInventory = invUpdated;
         }
       } else {
-        const { data: invCreated, error: invErr } = await supabase
+        const { data: invCreated, error: invErr } = await db
           .from('inventory')
           .insert({
             product_id: productId,
@@ -213,7 +186,7 @@ export async function PATCH(
 
       // Update in_stock flag on product
       const available = Math.max(0, newQuantity - currentReserved);
-      await supabase
+      await db
         .from('products')
         .update({ in_stock: available > 0 })
         .eq('id', productId);
@@ -244,8 +217,8 @@ export async function DELETE(
   { params }: { params: { productId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -258,7 +231,7 @@ export async function DELETE(
     const forceArchive = searchParams.get('archive') === 'true';
 
     // 1. Check if product exists
-    const { data: product, error: fetchErr } = await supabase
+    const { data: product, error: fetchErr } = await db
       .from('products')
       .select('id, name, is_published')
       .eq('id', productId)
@@ -269,7 +242,7 @@ export async function DELETE(
     }
 
     // 2. Check for historical orders in order_items
-    const { count: orderItemsCount, error: countErr } = await supabase
+    const { count: orderItemsCount, error: countErr } = await db
       .from('order_items')
       .select('id', { count: 'exact', head: true })
       .eq('product_id', productId);
@@ -279,7 +252,7 @@ export async function DELETE(
     // 3. If referenced in historical orders or archive was explicitly requested
     if (hasOrderReferences || forceArchive) {
       // Safely unpublish (archive)
-      const { error: archiveErr } = await supabase
+      const { error: archiveErr } = await db
         .from('products')
         .update({ is_published: false })
         .eq('id', productId);
@@ -301,13 +274,13 @@ export async function DELETE(
 
     // 4. No orders reference this product: Safe to permanently delete
     // Delete product images
-    await supabase.from('product_images').delete().eq('product_id', productId);
+    await db.from('product_images').delete().eq('product_id', productId);
 
     // Delete inventory row
-    await supabase.from('inventory').delete().eq('product_id', productId);
+    await db.from('inventory').delete().eq('product_id', productId);
 
     // Delete product
-    const { error: deleteErr } = await supabase
+    const { error: deleteErr } = await db
       .from('products')
       .delete()
       .eq('id', productId);
@@ -316,7 +289,7 @@ export async function DELETE(
       // If constraint violation occurs unexpectedly
       if (deleteErr.code === '23503' || deleteErr.message.toLowerCase().includes('foreign key')) {
         // Fall back to safe unpublishing
-        await supabase.from('products').update({ is_published: false }).eq('id', productId);
+        await db.from('products').update({ is_published: false }).eq('id', productId);
         return NextResponse.json({
           success: true,
           archived: true,

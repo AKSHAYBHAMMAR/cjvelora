@@ -1,35 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
-
-/**
- * Helper to authenticate incoming requests via Supabase Bearer JWT
- * and verify administrator permissions against `admin_roles`.
- */
-async function authenticateAdmin(req: NextRequest): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 /**
  * GET /api/admin/products
@@ -37,25 +7,25 @@ async function authenticateAdmin(req: NextRequest): Promise<{ admin: AdminProfil
  */
 export async function GET(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
-    // Query products, categories, inventory, and product_images in parallel
+    // Query products, categories, inventory, and product_images in parallel with authenticated client
     const [productsRes, categoriesRes, inventoryRes, imagesRes] = await Promise.all([
-      supabase
+      db
         .from('products')
         .select('*, categories(id, name, slug)')
         .order('created_at', { ascending: false }),
-      supabase
+      db
         .from('categories')
         .select('id, name, slug')
         .order('name', { ascending: true }),
-      supabase
+      db
         .from('inventory')
         .select('*'),
-      supabase
+      db
         .from('product_images')
         .select('*')
         .order('display_order', { ascending: true }),
@@ -146,8 +116,8 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -205,7 +175,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check slug uniqueness
-    const { data: existingSlug } = await supabase
+    const { data: existingSlug } = await db
       .from('products')
       .select('id')
       .eq('slug', cleanedSlug)
@@ -241,7 +211,7 @@ export async function POST(req: NextRequest) {
       productPayload.category_id = categoryId;
     }
 
-    const { data: createdProduct, error: productErr } = await supabase
+    const { data: createdProduct, error: productErr } = await db
       .from('products')
       .insert(productPayload)
       .select('*, categories(id, name, slug)')
@@ -255,7 +225,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Initialize inventory record
-    const { error: inventoryErr } = await supabase
+    const { error: inventoryErr } = await db
       .from('inventory')
       .insert({
         product_id: createdProduct.id,

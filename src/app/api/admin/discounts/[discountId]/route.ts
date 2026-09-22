@@ -1,42 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { Discount } from '@/types';
-
-/**
- * Authenticates incoming requests via Supabase Bearer JWT
- * and verifies administrator privileges against `admin_roles`.
- */
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 function mapRowToDiscount(row: any): Discount {
   return {
@@ -76,8 +40,8 @@ export async function PATCH(
   { params }: { params: { discountId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -87,7 +51,7 @@ export async function PATCH(
     }
 
     // 1. Check existing record
-    const { data: existing, error: fetchErr } = await supabase
+    const { data: existing, error: fetchErr } = await db
       .from('discounts')
       .select('*')
       .eq('id', discountId)
@@ -110,7 +74,7 @@ export async function PATCH(
       }
 
       if (cleanedCode !== existing.code.toUpperCase()) {
-        const { data: conflict } = await supabase
+        const { data: conflict } = await db
           .from('discounts')
           .select('id')
           .ilike('code', cleanedCode)
@@ -209,7 +173,7 @@ export async function PATCH(
     }
 
     // 3. Update database
-    const { data: updated, error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await db
       .from('discounts')
       .update(updatePayload)
       .eq('id', discountId)
@@ -248,8 +212,8 @@ export async function DELETE(
   { params }: { params: { discountId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -259,7 +223,7 @@ export async function DELETE(
     }
 
     // 1. Fetch discount
-    const { data: discount, error: fetchErr } = await supabase
+    const { data: discount, error: fetchErr } = await db
       .from('discounts')
       .select('*')
       .eq('id', discountId)
@@ -271,11 +235,11 @@ export async function DELETE(
 
     // 2. Check usage count and discount_usages records
     const [usageTableCountRes, orderUsageCountRes] = await Promise.all([
-      supabase
+      db
         .from('discount_usages')
         .select('id', { count: 'exact', head: true })
         .eq('discount_id', discountId),
-      supabase
+      db
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('discount_code', discount.code),
@@ -301,7 +265,7 @@ export async function DELETE(
     }
 
     // 3. Unused discount: Safe to delete
-    const { error: deleteErr } = await supabase
+    const { error: deleteErr } = await db
       .from('discounts')
       .delete()
       .eq('id', discountId);

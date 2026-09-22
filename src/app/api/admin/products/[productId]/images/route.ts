@@ -1,35 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { STORAGE_BUCKET, getPublicImageUrl } from '@/lib/product-images';
-
-/**
- * Authenticates admin session.
- */
-async function authenticateAdmin(req: NextRequest) {
-  if (!isSupabaseConfigured) {
-    return { admin: false, error: 'Database not configured.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: false, error: 'Unauthorized.', status: 401 };
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return { admin: false, error: 'Unauthorized session.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: false, error: 'Forbidden: Admin access required.', status: 403 };
-  }
-
-  return { admin: true, user, status: 200 };
-}
 
 /**
  * GET /api/admin/products/[productId]/images
@@ -40,13 +11,13 @@ export async function GET(
   { params }: { params: { productId: string } }
 ) {
   try {
-    const auth = await authenticateAdmin(req);
-    if (!auth.admin) {
-      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const productId = params.productId;
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('product_images')
       .select('*')
       .eq('product_id', productId)
@@ -81,9 +52,9 @@ export async function POST(
   { params }: { params: { productId: string } }
 ) {
   try {
-    const auth = await authenticateAdmin(req);
-    if (!auth.admin) {
-      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const productId = params.productId;
@@ -95,7 +66,7 @@ export async function POST(
     }
 
     // Insert into product_images table
-    const { data: record, error: insertErr } = await supabase
+    const { data: record, error: insertErr } = await db
       .from('product_images')
       .insert({
         product_id: productId,
@@ -117,7 +88,7 @@ export async function POST(
 
     // If setAsPrimary or if this is the first image, update product's image_url
     if (setAsPrimary || displayOrder === 0) {
-      await supabase
+      await db
         .from('products')
         .update({ image_url: publicUrl })
         .eq('id', productId);
@@ -149,9 +120,9 @@ export async function PATCH(
   { params }: { params: { productId: string } }
 ) {
   try {
-    const auth = await authenticateAdmin(req);
-    if (!auth.admin) {
-      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const productId = params.productId;
@@ -161,7 +132,7 @@ export async function PATCH(
     // Flow 1: Set specific image as Primary
     if (primaryImageId) {
       // Find the target image
-      const { data: targetImg, error: targetErr } = await supabase
+      const { data: targetImg, error: targetErr } = await db
         .from('product_images')
         .select('*')
         .eq('id', primaryImageId)
@@ -173,7 +144,7 @@ export async function PATCH(
       }
 
       // Fetch all images for this product
-      const { data: allImages } = await supabase
+      const { data: allImages } = await db
         .from('product_images')
         .select('id, display_order')
         .eq('product_id', productId)
@@ -184,16 +155,16 @@ export async function PATCH(
         let order = 1;
         for (const img of allImages) {
           if (img.id === primaryImageId) {
-            await supabase.from('product_images').update({ display_order: 0 }).eq('id', img.id);
+            await db.from('product_images').update({ display_order: 0 }).eq('id', img.id);
           } else {
-            await supabase.from('product_images').update({ display_order: order++ }).eq('id', img.id);
+            await db.from('product_images').update({ display_order: order++ }).eq('id', img.id);
           }
         }
       }
 
       // Update the product's primary image_url
       const publicUrl = getPublicImageUrl(targetImg.storage_path);
-      await supabase
+      await db
         .from('products')
         .update({ image_url: publicUrl })
         .eq('id', productId);
@@ -208,7 +179,7 @@ export async function PATCH(
     // Flow 2: Batch reorder
     if (Array.isArray(reorderedImages)) {
       for (const item of reorderedImages) {
-        await supabase
+        await db
           .from('product_images')
           .update({ display_order: item.displayOrder })
           .eq('id', item.id)
@@ -219,7 +190,7 @@ export async function PATCH(
       const topItem = reorderedImages.find((item) => item.displayOrder === 0);
       if (topItem && topItem.storagePath) {
         const publicUrl = getPublicImageUrl(topItem.storagePath);
-        await supabase
+        await db
           .from('products')
           .update({ image_url: publicUrl })
           .eq('id', productId);
@@ -243,9 +214,9 @@ export async function DELETE(
   { params }: { params: { productId: string } }
 ) {
   try {
-    const auth = await authenticateAdmin(req);
-    if (!auth.admin) {
-      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const productId = params.productId;
@@ -269,7 +240,7 @@ export async function DELETE(
     }
 
     // 1. Remove from Supabase Storage bucket
-    const { error: storageErr } = await supabase.storage
+    const { error: storageErr } = await db.storage
       .from(STORAGE_BUCKET)
       .remove([storagePath]);
 
@@ -278,7 +249,7 @@ export async function DELETE(
     }
 
     // 2. Remove from product_images table
-    const { error: dbErr } = await supabase
+    const { error: dbErr } = await db
       .from('product_images')
       .delete()
       .eq('id', imageId)
@@ -289,7 +260,7 @@ export async function DELETE(
     }
 
     // Check if deleted image was the primary product image; if so, fallback to next available
-    const { data: remaining } = await supabase
+    const { data: remaining } = await db
       .from('product_images')
       .select('storage_path')
       .eq('product_id', productId)
@@ -298,7 +269,7 @@ export async function DELETE(
 
     if (remaining && remaining.length > 0) {
       const newPrimary = getPublicImageUrl(remaining[0].storage_path);
-      await supabase.from('products').update({ image_url: newPrimary }).eq('id', productId);
+      await db.from('products').update({ image_url: newPrimary }).eq('id', productId);
     }
 
     return NextResponse.json({ success: true, message: 'Image deleted successfully.' });

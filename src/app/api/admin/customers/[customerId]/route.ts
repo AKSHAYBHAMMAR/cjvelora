@@ -1,44 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { mapSupabaseOrder } from '@/lib/orders';
 import { AdminCustomerDetail, AdminCustomerShippingAddress } from '@/types';
-
-/**
- * Authenticates that the incoming request has a valid administrator session.
- */
-async function authenticateAdmin(req: NextRequest): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing administrator authentication token.', status: 401 };
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired administrator session.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: You do not have administrator privileges.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { customerId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -47,8 +18,8 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Customer identifier is required.' }, { status: 400 });
     }
 
-    // 1. Query orders matching customer_id (UUID) or fallback customer_email
-    let ordersQuery = supabase
+    // 1. Query orders matching customer_id (UUID) or fallback customer_email with authenticated client
+    let ordersQuery = db
       .from('orders')
       .select('*, order_items(*)')
       .order('created_at', { ascending: false });
@@ -75,7 +46,7 @@ export async function GET(
     // Fallback search: if UUID search returned no orders, check if customerId matches email
     let finalOrders = matchedOrders || [];
     if (finalOrders.length === 0 && isUuid) {
-      const { data: fallbackOrders } = await supabase
+      const { data: fallbackOrders } = await db
         .from('orders')
         .select('*, order_items(*)')
         .ilike('customer_email', rawCustomerId)

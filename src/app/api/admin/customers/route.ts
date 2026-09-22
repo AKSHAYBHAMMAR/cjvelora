@@ -1,40 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { AdminCustomerSummary } from '@/types';
-
-/**
- * Authenticates that the incoming request has a valid administrator session.
- */
-async function authenticateAdmin(req: NextRequest): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing administrator authentication token.', status: 401 };
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired administrator session.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: You do not have administrator privileges.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 export async function GET(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -45,8 +16,8 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '25', 10) || 25));
 
-    // 1. Fetch orders from database
-    const { data: orders, error: ordersError } = await supabase
+    // 1. Fetch orders from database with authenticated admin client
+    const { data: orders, error: ordersError } = await db
       .from('orders')
       .select('id, order_number, customer_id, customer_name, customer_email, customer_phone, shipping_name, shipping_phone, total_amount, subtotal, payment_status, order_status, status, created_at')
       .order('created_at', { ascending: false });

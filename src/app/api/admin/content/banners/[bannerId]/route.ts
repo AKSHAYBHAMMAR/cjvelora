@@ -1,39 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
-
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await defaultSupabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 /**
  * PUT /api/admin/content/banners/[bannerId]
@@ -43,8 +11,8 @@ export async function PUT(
   { params }: { params: { bannerId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -65,7 +33,7 @@ export async function PUT(
     if (body.startDate !== undefined) updateFields.start_date = body.startDate || null;
     if (body.endDate !== undefined) updateFields.end_date = body.endDate || null;
 
-    const { data, error } = await defaultSupabase
+    const { data, error } = await db
       .from('promotional_banners')
       .update(updateFields)
       .eq('id', bannerId)
@@ -108,13 +76,13 @@ export async function DELETE(
   { params }: { params: { bannerId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const { bannerId } = params;
-    const { error } = await defaultSupabase
+    const { error } = await db
       .from('promotional_banners')
       .delete()
       .eq('id', bannerId);

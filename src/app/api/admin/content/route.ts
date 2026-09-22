@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import {
   DEFAULT_ANNOUNCEMENT,
   DEFAULT_HERO,
@@ -12,45 +11,14 @@ import { AllContentData, SiteContentSectionKey } from '@/types/content';
 
 export const dynamic = 'force-dynamic';
 
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await defaultSupabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
-
 /**
  * GET /api/admin/content
  * Retrieves all content management domains for the admin panel.
  */
 export async function GET(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, adminProfile, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db || !adminProfile) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -66,13 +34,13 @@ export async function GET(req: NextRequest) {
 
     // Parallel fetch from database
     const [siteContentRes, bannersRes, featCollectionsRes, featProductsRes] = await Promise.all([
-      defaultSupabase.from('site_content').select('*'),
-      defaultSupabase.from('promotional_banners').select('*').order('display_order', { ascending: true }),
-      defaultSupabase
+      db.from('site_content').select('*'),
+      db.from('promotional_banners').select('*').order('display_order', { ascending: true }),
+      db
         .from('featured_collections')
         .select('*, categories(id, name, slug, image_url)')
         .order('display_order', { ascending: true }),
-      defaultSupabase
+      db
         .from('featured_products')
         .select('*, products(id, name, slug, price, image, image_url, badge, in_stock, category)')
         .order('display_order', { ascending: true }),
@@ -151,8 +119,8 @@ export async function GET(req: NextRequest) {
  */
 export async function PUT(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, adminProfile, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db || !adminProfile) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -175,7 +143,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const nowIso = new Date().toISOString();
-    const { error: upsertError } = await defaultSupabase
+    const { error: upsertError } = await db
       .from('site_content')
       .upsert(
         {
@@ -183,7 +151,7 @@ export async function PUT(req: NextRequest) {
           content,
           active: active !== undefined ? Boolean(active) : true,
           updated_at: nowIso,
-          updated_by: admin.id,
+          updated_by: adminProfile.id,
         },
         { onConflict: 'section' }
       );

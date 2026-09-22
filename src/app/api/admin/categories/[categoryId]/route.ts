@@ -1,42 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { AdminCategory } from '@/types';
-
-/**
- * Authenticates incoming requests via Supabase Bearer JWT
- * and verifies administrator privileges against `admin_roles`.
- */
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 function cleanSlug(str: string): string {
   return (str || '')
@@ -55,8 +19,8 @@ export async function PATCH(
   { params }: { params: { categoryId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -66,7 +30,7 @@ export async function PATCH(
     }
 
     // 1. Check existing category
-    const { data: existing, error: fetchErr } = await supabase
+    const { data: existing, error: fetchErr } = await db
       .from('categories')
       .select('*')
       .eq('id', categoryId)
@@ -90,7 +54,7 @@ export async function PATCH(
 
       if (sanitizedSlug !== existing.slug) {
         // Check uniqueness
-        const { data: conflict } = await supabase
+        const { data: conflict } = await db
           .from('categories')
           .select('id')
           .eq('slug', sanitizedSlug)
@@ -132,7 +96,7 @@ export async function PATCH(
     }
 
     // 3. Update in database
-    const { data: updatedRecord, error: updateErr } = await supabase
+    const { data: updatedRecord, error: updateErr } = await db
       .from('categories')
       .update(updatePayload)
       .eq('id', categoryId)
@@ -147,7 +111,7 @@ export async function PATCH(
     }
 
     // Compute live product count for this category
-    const { count: productCount } = await supabase
+    const { count: productCount } = await db
       .from('products')
       .select('id', { count: 'exact', head: true })
       .eq('category_id', categoryId);
@@ -189,8 +153,8 @@ export async function DELETE(
   { params }: { params: { categoryId: string } }
 ) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -200,7 +164,7 @@ export async function DELETE(
     }
 
     // 1. Fetch category
-    const { data: category, error: catErr } = await supabase
+    const { data: category, error: catErr } = await db
       .from('categories')
       .select('*')
       .eq('id', categoryId)
@@ -213,11 +177,11 @@ export async function DELETE(
     // 2. Check for attached products in products table
     // Check both category_id and slug to ensure comprehensive protection
     const [idCountRes, slugCountRes] = await Promise.all([
-      supabase
+      db
         .from('products')
         .select('id', { count: 'exact', head: true })
         .eq('category_id', categoryId),
-      supabase
+      db
         .from('products')
         .select('id', { count: 'exact', head: true })
         .eq('slug', category.slug),
@@ -239,7 +203,7 @@ export async function DELETE(
     }
 
     // 3. Safe to delete: no products are attached
-    const { error: deleteErr } = await supabase
+    const { error: deleteErr } = await db
       .from('categories')
       .delete()
       .eq('id', categoryId);

@@ -1,42 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { AdminCategory } from '@/types';
-
-/**
- * Authenticates incoming requests via Supabase Bearer JWT
- * and verifies administrator privileges against `admin_roles`.
- */
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 /**
  * Sanitizes and generates a clean slug.
@@ -55,18 +19,18 @@ function cleanSlug(str: string): string {
  */
 export async function GET(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     // 1. Fetch categories and products count in parallel
     const [categoriesRes, productsRes] = await Promise.all([
-      supabase
+      db
         .from('categories')
         .select('*')
         .order('display_order', { ascending: true }),
-      supabase
+      db
         .from('products')
         .select('id, category_id, slug'),
     ]);
@@ -126,8 +90,8 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -147,7 +111,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Validate slug uniqueness
-    const { data: existingSlug } = await supabase
+    const { data: existingSlug } = await db
       .from('categories')
       .select('id')
       .eq('slug', sanitizedSlug)
@@ -172,7 +136,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: createdCategory, error: insertErr } = await supabase
+    const { data: createdCategory, error: insertErr } = await db
       .from('categories')
       .insert(categoryPayload)
       .select()

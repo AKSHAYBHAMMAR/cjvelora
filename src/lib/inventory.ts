@@ -129,8 +129,8 @@ export async function getInventoryWithProducts(): Promise<ProductInventoryView[]
  * Records an inventory operation into the 'audit_logs' table.
  */
 export async function recordInventoryAudit(params: {
-  userId?: string;
-  userEmail?: string;
+  userId: string;
+  userEmail: string;
   action: string;
   entityId: string;
   productName?: string;
@@ -138,12 +138,14 @@ export async function recordInventoryAudit(params: {
   newQuantity?: number;
   delta?: number;
   reason?: string;
+  client?: any;
 }): Promise<void> {
   try {
     if (!isSupabaseConfigured) return;
 
+    const db = params.client || supabase;
     // Attempt to write into audit_logs table
-    await supabase.from('audit_logs').insert({
+    await db.from('audit_logs').insert({
       user_id: params.userId || null,
       action: params.action,
       entity_type: 'inventory',
@@ -172,13 +174,15 @@ export async function adjustStock(params: {
   reason: string;
   adminProfile: AdminProfile;
   productName?: string;
+  client?: any;
 }): Promise<{ success: boolean; updatedItem?: InventoryItem; error?: string }> {
   try {
     if (!isSupabaseConfigured) {
       return { success: false, error: 'Database is not configured.' };
     }
 
-    const { productId, delta, reason, adminProfile, productName } = params;
+    const { productId, delta, reason, adminProfile, productName, client } = params;
+    const db = client || supabase;
 
     // In client-side context, route through the secure admin API endpoint with JWT
     if (typeof window !== 'undefined') {
@@ -212,7 +216,7 @@ export async function adjustStock(params: {
       return { success: false, error: 'Adjustment reason or note is required.' };
     }
 
-    const { data: current, error: fetchErr } = await supabase
+    const { data: current, error: fetchErr } = await db
       .from('inventory')
       .select('*')
       .eq('product_id', productId)
@@ -232,7 +236,7 @@ export async function adjustStock(params: {
       };
     }
 
-    const { data: updated, error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await db
       .from('inventory')
       .update({
         quantity: newQuantity,
@@ -258,6 +262,7 @@ export async function adjustStock(params: {
       newQuantity: newQuantity,
       delta: delta,
       reason: reason.trim(),
+      client: db,
     });
 
     return { success: true, updatedItem };
@@ -274,13 +279,15 @@ export async function updateLowStockThreshold(params: {
   threshold: number;
   adminProfile: AdminProfile;
   productName?: string;
+  client?: any;
 }): Promise<{ success: boolean; updatedItem?: InventoryItem; error?: string }> {
   try {
     if (!isSupabaseConfigured) {
       return { success: false, error: 'Database is not configured.' };
     }
 
-    const { productId, threshold, adminProfile, productName } = params;
+    const { productId, threshold, adminProfile, productName, client } = params;
+    const db = client || supabase;
 
     // In client-side context, route through the secure admin API endpoint with JWT
     if (typeof window !== 'undefined') {
@@ -308,7 +315,7 @@ export async function updateLowStockThreshold(params: {
       return { success: false, error: 'Low-stock threshold must be a valid non-negative number.' };
     }
 
-    const { data: updated, error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await db
       .from('inventory')
       .update({
         low_stock_threshold: threshold,
@@ -333,6 +340,7 @@ export async function updateLowStockThreshold(params: {
       productName: productName,
       newQuantity: threshold,
       reason: `Updated threshold to ${threshold}`,
+      client: db,
     });
 
     return { success: true, updatedItem };

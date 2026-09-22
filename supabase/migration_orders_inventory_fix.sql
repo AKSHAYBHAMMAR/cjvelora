@@ -500,6 +500,47 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
 
+-- Helper function: check if authenticated user is super_admin or staff
+CREATE OR REPLACE FUNCTION public.is_admin_or_staff(p_user_id uuid DEFAULT auth.uid())
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_is_admin boolean;
+BEGIN
+  IF p_user_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  -- Check direct user_id match in admin_roles
+  SELECT EXISTS (
+    SELECT 1 FROM public.admin_roles
+    WHERE user_id = p_user_id
+      AND role IN ('super_admin', 'staff')
+  ) INTO v_is_admin;
+
+  IF v_is_admin THEN
+    RETURN true;
+  END IF;
+
+  -- Fallback check by authenticated user email if user_id is not yet bound
+  SELECT EXISTS (
+    SELECT 1 FROM public.admin_roles ar
+    JOIN auth.users u ON u.email = ar.email
+    WHERE u.id = p_user_id
+      AND ar.role IN ('super_admin', 'staff')
+  ) INTO v_is_admin;
+
+  RETURN v_is_admin;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.is_admin_or_staff(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin_or_staff(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin_or_staff(uuid) TO service_role;
+
 -- Orders: Customer can read own orders
 DROP POLICY IF EXISTS "Customers can view their own orders" ON public.orders;
 CREATE POLICY "Customers can view their own orders"
@@ -513,6 +554,21 @@ CREATE POLICY "Customers can insert their own orders"
   ON public.orders FOR INSERT
   TO authenticated
   WITH CHECK (customer_id = auth.uid());
+
+-- Orders: Admin can view all orders
+DROP POLICY IF EXISTS "Admins can view all orders" ON public.orders;
+CREATE POLICY "Admins can view all orders"
+  ON public.orders FOR SELECT
+  TO authenticated
+  USING (public.is_admin_or_staff());
+
+-- Orders: Admin can update order status
+DROP POLICY IF EXISTS "Admins can update orders" ON public.orders;
+CREATE POLICY "Admins can update orders"
+  ON public.orders FOR UPDATE
+  TO authenticated
+  USING (public.is_admin_or_staff())
+  WITH CHECK (public.is_admin_or_staff());
 
 -- Order Items: Customer can view items belonging to their own orders
 DROP POLICY IF EXISTS "Customers can view their order items" ON public.order_items;
@@ -536,9 +592,17 @@ CREATE POLICY "Customers can insert their order items"
     )
   );
 
+-- Order Items: Admin can view all order items
+DROP POLICY IF EXISTS "Admins can view all order items" ON public.order_items;
+CREATE POLICY "Admins can view all order items"
+  ON public.order_items FOR SELECT
+  TO authenticated
+  USING (public.is_admin_or_staff());
+
 -- Inventory: Public can read stock
 DROP POLICY IF EXISTS "Allow public read access to inventory" ON public.inventory;
 CREATE POLICY "Allow public read access to inventory"
   ON public.inventory FOR SELECT
   TO anon, authenticated
   USING (true);
+

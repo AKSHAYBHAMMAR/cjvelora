@@ -404,3 +404,29 @@ export async function signOutAdmin(): Promise<void> {
     console.error('Error signing out admin:', err);
   }
 }
+
+/**
+ * Creates a Supabase client configured with the administrator's Bearer token
+ * so that auth.uid() is preserved inside PostgreSQL for RLS policies.
+ */
+export function createAuthenticatedAdminClient(token: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  // Dynamic import or client creation
+  const { createClient } = require('@supabase/supabase-js');
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+

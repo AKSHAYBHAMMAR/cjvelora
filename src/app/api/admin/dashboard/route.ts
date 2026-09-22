@@ -1,61 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 export async function GET(req: NextRequest) {
   try {
-    if (!isSupabaseConfigured) {
-      return NextResponse.json(
-        { success: false, error: 'Database is not configured in the environment.' },
-        { status: 503 }
-      );
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
-    // 1. Verify user session & admin role strictly via Authorization header
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Administrator authentication required.' },
-        { status: 401 }
-      );
-    }
-
-    const { data: tokenUserData, error: authError } = await defaultSupabase.auth.getUser(token);
-    const user = tokenUserData?.user;
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Session invalid or expired.' },
-        { status: 401 }
-      );
-    }
-
-    const role = await verifyAdminRole(user.id, user.email);
-    if (!role) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden: You do not have administrator permissions.' },
-        { status: 403 }
-      );
-    }
-
-    // 2. Fetch authoritative database data in parallel
+    // 2. Fetch authoritative database data in parallel with authenticated admin context
     const [ordersRes, inventoryRes, productsRes, cartsRes] = await Promise.all([
-      defaultSupabase
+      db
         .from('orders')
         .select('id, order_number, customer_id, customer_name, customer_email, total_amount, subtotal, payment_status, order_status, status, created_at')
         .order('created_at', { ascending: false }),
-      defaultSupabase
+      db
         .from('inventory')
         .select('id, product_id, quantity, reserved_quantity, low_stock_threshold, updated_at'),
-      defaultSupabase
+      db
         .from('products')
         .select('id, name, slug, price, image, image_url, in_stock, is_published'),
-      defaultSupabase
+      db
         .from('carts')
         .select('user_id'),
     ]);
+
 
     if (ordersRes.error) {
       console.error('Error fetching admin orders:', ordersRes.error);

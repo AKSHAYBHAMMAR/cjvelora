@@ -1,39 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
-
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await defaultSupabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 /**
  * PUT /api/admin/content/featured-collections
@@ -41,8 +9,8 @@ async function authenticateAdmin(
  */
 export async function PUT(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -54,7 +22,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Clean existing featured collections
-    await defaultSupabase.from('featured_collections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await db.from('featured_collections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (items.length > 0) {
       const rows = items.map((item: any, idx: number) => ({
@@ -66,7 +34,7 @@ export async function PUT(req: NextRequest) {
         updated_at: new Date().toISOString(),
       }));
 
-      const { error: insertErr } = await defaultSupabase.from('featured_collections').insert(rows);
+      const { error: insertErr } = await db.from('featured_collections').insert(rows);
       if (insertErr) {
         console.error('Error inserting featured collections:', insertErr);
         return NextResponse.json({ success: false, error: insertErr.message }, { status: 500 });

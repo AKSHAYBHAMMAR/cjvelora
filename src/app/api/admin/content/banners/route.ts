@@ -1,39 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
-
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await defaultSupabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
 
 /**
  * POST /api/admin/content/banners
@@ -41,8 +9,8 @@ async function authenticateAdmin(
  */
 export async function POST(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, adminProfile, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db || !adminProfile) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -53,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Banner title is required.' }, { status: 400 });
     }
 
-    const { data, error } = await defaultSupabase
+    const { data, error } = await db
       .from('promotional_banners')
       .insert({
         title: title.trim(),
@@ -65,7 +33,7 @@ export async function POST(req: NextRequest) {
         display_order: Number(displayOrder ?? 0),
         start_date: startDate || null,
         end_date: endDate || null,
-        created_by: admin.id,
+        created_by: adminProfile.id,
       })
       .select()
       .single();

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase as defaultSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import {
   AllAppSettings,
   PaymentEnvStatus,
@@ -76,41 +75,6 @@ const DEFAULT_SETTINGS: AllAppSettings = {
 };
 
 /**
- * Authenticates incoming requests via Supabase Bearer JWT
- * and verifies administrator privileges against `admin_roles`.
- */
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return { admin: null, error: 'Database is not configured in the environment.', status: 503 };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return { admin: null, error: 'Unauthorized: Missing authentication token.', status: 401 };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await defaultSupabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { admin: null, error: 'Unauthorized: Invalid or expired session token.', status: 401 };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return { admin: null, error: 'Forbidden: Administrator privileges required.', status: 403 };
-  }
-
-  return { admin: { id: user.id, email: user.email || '', role }, error: null, status: 200 };
-}
-
-/**
  * Determines environment variable statuses without exposing secret values.
  */
 function getEnvironmentStatus(): PaymentEnvStatus {
@@ -174,8 +138,8 @@ function getEnvironmentStatus(): PaymentEnvStatus {
  */
 export async function GET(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, adminProfile, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db || !adminProfile) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -192,7 +156,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch persistent database configurations if available
     try {
-      const { data, error } = await defaultSupabase
+      const { data, error } = await db
         .from('app_settings')
         .select('key, value, updated_at');
 
@@ -220,8 +184,8 @@ export async function GET(req: NextRequest) {
       success: true,
       settings: mergedSettings,
       envStatus,
-      adminRole: admin.role,
-      adminEmail: admin.email,
+      adminRole: adminProfile.role,
+      adminEmail: adminProfile.email,
       updatedAt: latestUpdatedAt,
     });
   } catch (err: any) {
@@ -239,8 +203,8 @@ export async function GET(req: NextRequest) {
  */
 export async function PUT(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, adminProfile, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db || !adminProfile) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -277,7 +241,7 @@ export async function PUT(req: NextRequest) {
       section === 'payments' ||
       (section === 'store' && 'maintenanceMode' in data);
 
-    if (isSensitive && admin.role !== 'super_admin') {
+    if (isSensitive && adminProfile.role !== 'super_admin') {
       return NextResponse.json(
         {
           success: false,
@@ -396,7 +360,7 @@ export async function PUT(req: NextRequest) {
 
     // Persist to public.app_settings
     const nowIso = new Date().toISOString();
-    const { error: upsertError } = await defaultSupabase
+    const { error: upsertError } = await db
       .from('app_settings')
       .upsert(
         {
@@ -404,7 +368,7 @@ export async function PUT(req: NextRequest) {
           value: sanitizedData,
           is_sensitive: isSensitive,
           updated_at: nowIso,
-          updated_by: admin.id,
+          updated_by: adminProfile.id,
         },
         { onConflict: 'key' }
       );

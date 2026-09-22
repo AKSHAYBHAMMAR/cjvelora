@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import {
   AnalyticsTimeframe,
   AnalyticsData,
@@ -12,59 +11,6 @@ import {
   TopCoupon,
   LowStockAlertItem,
 } from '@/types/analytics';
-
-/**
- * Authenticates that the incoming request has a valid administrator session.
- */
-async function authenticateAdmin(
-  req: NextRequest
-): Promise<{ admin: AdminProfile | null; error: string | null; status: number }> {
-  if (!isSupabaseConfigured) {
-    return {
-      admin: null,
-      error: 'Database is not configured in the environment.',
-      status: 503,
-    };
-  }
-
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return {
-      admin: null,
-      error: 'Unauthorized: Missing administrator authentication token.',
-      status: 401,
-    };
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return {
-      admin: null,
-      error: 'Unauthorized: Invalid or expired administrator session.',
-      status: 401,
-    };
-  }
-
-  const role = await verifyAdminRole(user.id, user.email);
-  if (!role) {
-    return {
-      admin: null,
-      error: 'Forbidden: You do not have administrator privileges.',
-      status: 403,
-    };
-  }
-
-  return {
-    admin: { id: user.id, email: user.email || '', role },
-    error: null,
-    status: 200,
-  };
-}
 
 /**
  * Helper to calculate start and end dates based on timeframe parameter.
@@ -253,8 +199,8 @@ function getCustomerKey(order: any): string {
 
 export async function GET(req: NextRequest) {
   try {
-    const { admin, error: authErr, status: authStatus } = await authenticateAdmin(req);
-    if (!admin) {
+    const { admin, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!admin || !db) {
       return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
@@ -283,7 +229,7 @@ export async function GET(req: NextRequest) {
     const currentEndIso = currentEnd.toISOString();
     const previousStartIso = previousStart.toISOString();
 
-    // Parallel Authoritative Queries
+    // Parallel Authoritative Queries with authenticated admin context
     const [
       allRecentOrdersRes,
       historicalPriorOrdersRes,
@@ -293,7 +239,7 @@ export async function GET(req: NextRequest) {
       inventoryRes,
     ] = await Promise.all([
       // 1. Orders spanning from previousStart to currentEnd (covers current & previous periods)
-      supabase
+      db
         .from('orders')
         .select(
           'id, order_number, customer_id, customer_email, total_amount, subtotal, discount, discount_amount, discount_code, shipping_fee, payment_status, order_status, status, created_at'
@@ -303,26 +249,26 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: true }),
 
       // 2. Prior orders before currentStart to identify repeat/returning customers
-      supabase
+      db
         .from('orders')
         .select('customer_id, customer_email')
         .lt('created_at', currentStartIso),
 
       // 3. Order items for products sold
-      supabase
+      db
         .from('order_items')
         .select('id, order_id, product_id, product_name, quantity, unit_price, subtotal, created_at'),
 
       // 4. Products catalog
-      supabase
+      db
         .from('products')
         .select('id, name, slug, price, category_id, image_url, image, in_stock, is_published'),
 
       // 5. Categories
-      supabase.from('categories').select('id, name, slug'),
+      db.from('categories').select('id, name, slug'),
 
       // 6. Inventory levels
-      supabase
+      db
         .from('inventory')
         .select('id, product_id, quantity, reserved_quantity, low_stock_threshold'),
     ]);

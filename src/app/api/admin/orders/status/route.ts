@@ -1,39 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { verifyAdminRole, AdminProfile } from '@/lib/auth';
+import { authenticateAdmin } from '@/lib/adminAuth';
 import { isValidStatusTransition } from '@/lib/orders';
 import { OrderStatus } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isSupabaseConfigured) {
-      return NextResponse.json(
-        { success: false, error: 'Database is not configured in the environment.' },
-        { status: 503 }
-      );
-    }
-
-    // 1. Verify user session & admin role strictly via Authorization header
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-
-    let adminProfile: AdminProfile | null = null;
-
-    if (token) {
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      if (!authError && user) {
-        const role = await verifyAdminRole(user.id, user.email);
-        if (role) {
-          adminProfile = { id: user.id, email: user.email || '', role };
-        }
-      }
-    }
-
-    if (!adminProfile) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Valid administrator session required.' },
-        { status: 403 }
-      );
+    const { admin: adminProfile, supabase: db, error: authErr, status: authStatus } = await authenticateAdmin(req);
+    if (!adminProfile || !db) {
+      return NextResponse.json({ success: false, error: authErr }, { status: authStatus });
     }
 
     const body = await req.json();
@@ -63,8 +37,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Fetch current order status from database
-    const { data: currentOrder, error: fetchError } = await supabase
+    // 3. Fetch current order status from database with authenticated admin client
+    const { data: currentOrder, error: fetchError } = await db
       .from('orders')
       .select('id, order_number, status, order_status, payment_status')
       .eq('id', orderId)
@@ -95,28 +69,28 @@ export async function POST(req: NextRequest) {
     // 5. If cancelling an unpaid order, release reserved inventory
     if ((newStatus === 'cancelled' || newStatus === 'refunded') && currentOrder.payment_status === 'pending') {
       try {
-        const { error: cancelRpcErr } = await supabase.rpc('cancel_order_reservation', {
+        const { error: cancelRpcErr } = await db.rpc('cancel_order_reservation', {
           p_order_id: orderId,
           p_reason: reason || 'Status updated by admin',
         });
 
         if (cancelRpcErr) {
           // Fallback inventory reservation release
-          const { data: items } = await supabase
+          const { data: items } = await db
             .from('order_items')
             .select('product_id, quantity')
             .eq('order_id', orderId);
 
           if (items && Array.isArray(items)) {
             for (const it of items) {
-              const { data: inv } = await supabase
+              const { data: inv } = await db
                 .from('inventory')
                 .select('reserved_quantity')
                 .eq('product_id', it.product_id)
                 .single();
 
               if (inv) {
-                await supabase
+                await db
                   .from('inventory')
                   .update({
                     reserved_quantity: Math.max(0, Number(inv.reserved_quantity ?? 0) - it.quantity),
@@ -133,7 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Update order status safely in database (keep status and order_status synchronized)
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('orders')
       .update({
         status: newStatus,
@@ -151,7 +125,7 @@ export async function POST(req: NextRequest) {
 
     // 7. Record audit log entry
     try {
-      await supabase.from('audit_logs').insert({
+      await db.from('audit_logs').insert({
         user_id: adminProfile.id,
         action: 'ORDER_STATUS_UPDATE',
         entity_type: 'orders',
