@@ -99,28 +99,49 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Fetch authoritative product prices, category relations, inventory availability, and active promotional offers
-    const productIds = items.map((i: any) => i.productId);
-    const [productsRes, inventoryRes, bannersRes] = await Promise.all([
-      userSupabase
-        .from('products')
-        .select('id, name, slug, price, is_published, in_stock, image_url, image, category_id, badge, is_most_loved, is_best_seller, categories(id, name, slug)')
-        .in('id', productIds),
-      userSupabase
-        .from('inventory')
-        .select('product_id, quantity, reserved_quantity, low_stock_threshold')
-        .in('product_id', productIds),
+    const rawProductIds: string[] = items.map((i: any) => String(i?.productId || '').trim());
+    const isUuid = (val: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+    const validUuidProductIds = Array.from(new Set(rawProductIds.filter(isUuid)));
+
+    const [productsRes, inventoryRes, bannersRes, categoriesRes] = await Promise.all([
+      validUuidProductIds.length > 0
+        ? userSupabase
+            .from('products')
+            .select('id, name, slug, price, is_published, in_stock, image_url, category_id, badge, is_best_seller')
+            .in('id', validUuidProductIds)
+        : Promise.resolve({ data: [] as any[], error: null }),
+      validUuidProductIds.length > 0
+        ? userSupabase
+            .from('inventory')
+            .select('product_id, quantity, reserved_quantity, low_stock_threshold')
+            .in('product_id', validUuidProductIds)
+        : Promise.resolve({ data: [] as any[], error: null }),
       userSupabase
         .from('promotional_banners')
         .select('*')
-        .eq('is_active', true)
+        .eq('active', true)
         .order('display_order', { ascending: true }),
+      userSupabase
+        .from('categories')
+        .select('id, name, slug'),
     ]);
 
     if (productsRes.error || !productsRes.data) {
+      console.error('Catalog verification query failed:', productsRes.error);
       return NextResponse.json(
         { success: false, error: 'Failed to verify catalog items from database.' },
         { status: 500 }
       );
+    }
+
+    // Build categories lookup map for authoritative offer collection resolution
+    const categoriesMap = new Map<string, { id: string; name: string; slug: string }>();
+    if (categoriesRes.data && Array.isArray(categoriesRes.data)) {
+      for (const cat of categoriesRes.data) {
+        if (cat.id) categoriesMap.set(String(cat.id), cat);
+        if (cat.slug) categoriesMap.set(String(cat.slug), cat);
+      }
     }
 
     // Resolve active promotional banners for server-authoritative discount validation
@@ -133,7 +154,7 @@ export async function POST(req: NextRequest) {
             imageUrl: b.image_url || '',
             ctaText: b.cta_text || '',
             ctaLink: b.cta_link || '',
-            active: b.is_active ?? b.active ?? true,
+            active: b.active ?? b.is_active ?? true,
             displayOrder: Number(b.display_order ?? 0),
             startDate: b.start_date || undefined,
             endDate: b.end_date || undefined,
@@ -206,7 +227,7 @@ export async function POST(req: NextRequest) {
 
       // Server-authoritative offer pricing: check eligibility and compute discounted price
       const basePrice = Number(product.price);
-      const categoryRel = Array.isArray(product.categories) ? product.categories[0] : product.categories;
+      const categoryRel = product.category_id ? categoriesMap.get(String(product.category_id)) : null;
       const productForPricing: any = {
         id: product.id,
         name: product.name,
@@ -214,10 +235,10 @@ export async function POST(req: NextRequest) {
         categorySlug: categoryRel?.slug || '',
         categoryId: product.category_id || '',
         price: basePrice,
-        isMostLoved: Boolean(product.is_most_loved ?? product.is_best_seller),
+        isMostLoved: Boolean(product.is_best_seller),
         badge: product.badge,
-        images: [product.image_url || product.image || ''],
-        image: product.image_url || product.image || '',
+        images: [product.image_url || ''],
+        image: product.image_url || '',
         description: '',
         materials: '',
         rating: 5,
@@ -236,7 +257,7 @@ export async function POST(req: NextRequest) {
         unitPrice,
         quantity: requestedQty,
         subtotal: lineSubtotal,
-        productImage: product.image_url || product.image,
+        productImage: product.image_url,
       });
     }
 
