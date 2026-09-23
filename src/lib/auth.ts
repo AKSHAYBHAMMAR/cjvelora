@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type AdminRole = 'super_admin' | 'staff';
 
@@ -43,11 +44,16 @@ export function isValidAdminRole(role: string | null | undefined): role is Admin
  * Checks the `admin_roles` table in Supabase for the current user.
  * Returns the admin role if authorized, or null if unauthorized.
  */
-export async function verifyAdminRole(userId: string, userEmail?: string | null): Promise<AdminRole | null> {
+export async function verifyAdminRole(
+  userId: string,
+  userEmail?: string | null,
+  client?: SupabaseClient
+): Promise<AdminRole | null> {
   try {
     if (!isSupabaseConfigured) return null;
+    const db = client || supabase;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('admin_roles')
       .select('role')
       .eq('user_id', userId)
@@ -58,14 +64,18 @@ export async function verifyAdminRole(userId: string, userEmail?: string | null)
     }
 
     if (userEmail) {
-      const { data: emailData, error: emailError } = await supabase
-        .from('admin_roles')
-        .select('role')
-        .eq('email', userEmail)
-        .maybeSingle();
+      try {
+        const { data: emailData, error: emailError } = await db
+          .from('admin_roles')
+          .select('role')
+          .eq('email', userEmail)
+          .maybeSingle();
 
-      if (!emailError && emailData && isValidAdminRole(emailData.role)) {
-        return emailData.role.toLowerCase().trim() as AdminRole;
+        if (!emailError && emailData && isValidAdminRole(emailData.role)) {
+          return emailData.role.toLowerCase().trim() as AdminRole;
+        }
+      } catch {
+        // Gracefully ignore error if email column is absent in schema
       }
     }
 

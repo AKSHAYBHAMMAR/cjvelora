@@ -87,7 +87,9 @@ export async function authenticateAdmin(req: NextRequest): Promise<Authenticated
     };
   }
 
-  const role = await verifyAdminRole(user.id, user.email);
+  const adminClient = createAuthenticatedAdminClient(token);
+
+  const role = await verifyAdminRole(user.id, user.email, adminClient);
   if (!role) {
     return {
       admin: null,
@@ -104,8 +106,6 @@ export async function authenticateAdmin(req: NextRequest): Promise<Authenticated
     email: user.email || '',
     role,
   };
-
-  const adminClient = createAuthenticatedAdminClient(token);
 
   return {
     admin: adminProfile,

@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: false }),
       db
         .from('inventory')
-        .select('id, product_id, quantity, reserved_quantity, low_stock_threshold, updated_at'),
+        .select('product_id, quantity, reserved_quantity, low_stock_threshold, updated_at'),
       db
         .from('products')
         .select('id, name, slug, price, image, image_url, in_stock, is_published'),
