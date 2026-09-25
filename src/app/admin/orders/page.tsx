@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   getAdminOrders,
@@ -63,10 +63,17 @@ export default function AdminOrdersPage() {
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
 
-  // Load Real Orders from Supabase
+  // Track initial load & mounted state to prevent duplicate/unmounted state updates
+  const isMountedRef = useRef(true);
+  const initialLoadDone = useRef(false);
+
+  // Load Real Orders from Supabase (stable callback with zero unstable dependencies)
   const loadData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+    if (isRefresh || initialLoadDone.current) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
     try {
       const [ordersData, profile] = await Promise.all([
@@ -74,25 +81,37 @@ export default function AdminOrdersPage() {
         getAdminProfile(),
       ]);
 
+      if (!isMountedRef.current) return;
+
       setOrders(ordersData);
       setAdminProfile(profile);
+      initialLoadDone.current = true;
 
-      // If details modal is open for an order, refresh it
-      if (selectedOrder) {
-        const fresh = ordersData.find((o) => o.id === selectedOrder.id);
-        if (fresh) setSelectedOrder(fresh);
-      }
+      // If details modal is open for an order, refresh it safely via functional state update
+      setSelectedOrder((prev) => {
+        if (!prev) return null;
+        const fresh = ordersData.find((o) => o.id === prev.id);
+        return fresh || prev;
+      });
     } catch (err) {
+      if (!isMountedRef.current) return;
       console.error('Failed to load orders:', err);
       setNotification({ type: 'error', message: 'Failed to query orders database.' });
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [selectedOrder]);
+  }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     loadData();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [loadData]);
 
   // Auto-dismiss notification after 5s
@@ -111,6 +130,17 @@ export default function AdminOrdersPage() {
     setStatusUpdateError(null);
     setShowStatusConfirm(false);
     setIsDetailsOpen(true);
+  };
+
+  // Close Order Details
+  const handleCloseDetails = () => {
+    if (statusUpdating) return;
+    setIsDetailsOpen(false);
+    setSelectedOrder(null);
+    setPendingNewStatus(null);
+    setStatusUpdateReason('');
+    setStatusUpdateError(null);
+    setShowStatusConfirm(false);
   };
 
   // Status update initiation
@@ -549,7 +579,7 @@ export default function AdminOrdersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-end">
           <div
             className="fixed inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => !statusUpdating && setIsDetailsOpen(false)}
+            onClick={handleCloseDetails}
           />
 
           <div className="relative w-full max-w-2xl h-full bg-[#14171A] border-l border-white/15 p-6 sm:p-8 shadow-2xl z-10 flex flex-col justify-between overflow-y-auto space-y-6">
@@ -582,7 +612,7 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <button
-                  onClick={() => setIsDetailsOpen(false)}
+                  onClick={handleCloseDetails}
                   className="p-2 rounded-xl text-ivory/40 hover:text-white hover:bg-white/5 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -927,7 +957,7 @@ export default function AdminOrdersPage() {
                 Atelier Order Audit · Database verified
               </span>
               <button
-                onClick={() => setIsDetailsOpen(false)}
+                onClick={handleCloseDetails}
                 className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-sans font-semibold cursor-pointer"
               >
                 Close Order Details
