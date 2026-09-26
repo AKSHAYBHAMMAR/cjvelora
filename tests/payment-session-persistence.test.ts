@@ -459,4 +459,83 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
       assert.equal(verified, false);
     });
   });
+
+  // ============================================================================
+  // 11. finalize_order_payment RPC Permissions & Security Context Suite
+  // ============================================================================
+  describe('finalize_order_payment RPC Permissions & Security Context', () => {
+    test('Migration Verification: migration_finalize_payment_permissions.sql defines exact signature, SECURITY DEFINER, search_path, and EXECUTE grants', async () => {
+      const fs = await import('fs');
+      const migrationPath = 'supabase/migration_finalize_payment_permissions.sql';
+      assert.ok(fs.existsSync(migrationPath), 'Migration file must exist');
+
+      const content = fs.readFileSync(migrationPath, 'utf8');
+
+      // 1. Signature verification
+      assert.ok(
+        content.includes('FUNCTION public.finalize_order_payment(') &&
+        content.includes('p_order_id uuid,') &&
+        content.includes('p_razorpay_order_id text,') &&
+        content.includes('p_razorpay_payment_id text') &&
+        content.includes('RETURNS jsonb'),
+        'Must define public.finalize_order_payment(uuid, text, text) returning jsonb'
+      );
+
+      // 2. SECURITY DEFINER and pinned search_path
+      assert.ok(content.includes('SECURITY DEFINER'), 'Must have SECURITY DEFINER');
+      assert.ok(content.includes('SET search_path = public, pg_temp'), 'Must have SET search_path = public, pg_temp');
+
+      // 3. Revoke public and grant authenticated & service_role
+      assert.ok(
+        content.includes('REVOKE ALL ON FUNCTION public.finalize_order_payment(uuid, text, text) FROM PUBLIC;'),
+        'Must revoke execution from PUBLIC'
+      );
+      assert.ok(
+        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO authenticated;'),
+        'Must grant execution to authenticated'
+      );
+      assert.ok(
+        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO service_role;'),
+        'Must grant execution to service_role'
+      );
+
+      // 4. Critical security logic preserved
+      assert.ok(content.includes('FOR UPDATE'), 'Must preserve row-level locking (FOR UPDATE)');
+      assert.ok(content.includes('v_caller_id := auth.uid();'), 'Must preserve caller ownership validation');
+      assert.ok(content.includes('Conflict: Authoritative Razorpay order ID mismatch.'), 'Must preserve Razorpay order ID check');
+      assert.ok(content.includes('Conflict: Razorpay payment ID has already been redeemed for another order.'), 'Must preserve replay check');
+      assert.ok(content.includes('idx_orders_razorpay_payment_id_unique'), 'Must ensure unique index exists');
+
+      // 5. Must NOT add customer UPDATE policy to orders
+      assert.ok(
+        !content.toLowerCase().includes('create policy') ||
+        !content.toLowerCase().includes('update on public.orders to authenticated'),
+        'Migration must not grant broad UPDATE policy to customers on orders'
+      );
+    });
+
+    test('Verify Route: Diagnostic error logging captures code, message, details, hint without exposing secrets', async () => {
+      const fs = await import('fs');
+      const routeContent = fs.readFileSync('src/app/api/payments/verify/route.ts', 'utf8');
+
+      // 1. Logs error diagnostic fields
+      assert.ok(routeContent.includes('code: finalizeRpcErr.code'), 'Must log error code');
+      assert.ok(routeContent.includes('message: finalizeRpcErr.message'), 'Must log error message');
+      assert.ok(routeContent.includes('details: finalizeRpcErr.details'), 'Must log error details');
+      assert.ok(routeContent.includes('hint: finalizeRpcErr.hint'), 'Must log error hint');
+
+      // 2. Client response remains fail-closed and sanitized
+      assert.ok(
+        routeContent.includes("Payment finalization failed. Stock and order state were not modified."),
+        'Customer-facing response must remain sanitized and fail-closed'
+      );
+
+      // 3. No raw fallback direct updating orders as paid
+      assert.ok(
+        !routeContent.includes("using fallback atomic update"),
+        'Must not contain unsafe direct update fallback'
+      );
+    });
+  });
 });
+

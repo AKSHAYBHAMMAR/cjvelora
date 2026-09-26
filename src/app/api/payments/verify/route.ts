@@ -179,7 +179,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (finalizeRpcErr) {
-      console.error('RPC finalize_order_payment error for order ID:', cleanOrderId, finalizeRpcErr.message);
+      console.error('RPC finalize_order_payment error for order ID:', cleanOrderId, {
+        code: finalizeRpcErr.code,
+        message: finalizeRpcErr.message,
+        details: finalizeRpcErr.details,
+        hint: finalizeRpcErr.hint,
+      });
 
       const errMsg = finalizeRpcErr.message || '';
       const isConflict = errMsg.toLowerCase().includes('conflict') || errMsg.toLowerCase().includes('already');
