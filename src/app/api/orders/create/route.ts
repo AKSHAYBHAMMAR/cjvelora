@@ -265,9 +265,39 @@ export async function POST(req: NextRequest) {
     const finalTotal = calculatedSubtotal + shippingFee;
     const orderNumber = generateOrderNumber();
 
+    // 5. Razorpay Gateway Order Creation (if credentials configured)
+    let razorpayOrderId: string | null = null;
+    let razorpayConfigured = false;
+
+    if (isRazorpayConfigured()) {
+      const rzResult = await createRazorpayOrder({
+        amount: Math.round(finalTotal * 100), // in paise
+        currency: 'INR',
+        receipt: orderNumber,
+        notes: {
+          order_number: orderNumber,
+          customer_email: shippingDetails.email,
+        },
+      });
+
+      if (!rzResult.order || !rzResult.order.id) {
+        console.error('Razorpay order creation failed:', rzResult.error);
+        return NextResponse.json(
+          {
+            success: false,
+            error: rzResult.error || 'Failed to initialize secure payment session. Please try again.',
+          },
+          { status: 502 }
+        );
+      }
+
+      razorpayOrderId = rzResult.order.id;
+      razorpayConfigured = true;
+    }
+
     let createdOrderId: string | null = null;
 
-    // 5. Attempt atomic RPC: create_order_with_items
+    // 6. Attempt atomic RPC: create_order_with_items (with authoritative razorpay_order_id)
     const rpcItems = validatedItems.map((item) => ({
       product_id: item.productId,
       product_name: item.productName,
@@ -295,17 +325,18 @@ export async function POST(req: NextRequest) {
       p_shipping_fee: shippingFee,
       p_total_amount: finalTotal,
       p_items: rpcItems,
+      p_razorpay_order_id: razorpayOrderId,
     });
 
     if (!rpcError && rpcData && rpcData.order_id) {
       createdOrderId = rpcData.order_id;
     } else {
-      // Fallback: Direct insert with compensating cleanup and stock reservation
+      // Fallback: Direct insert with compensating cleanup, stock reservation, and bound razorpay_order_id
       if (rpcError) {
         console.warn('RPC create_order_with_items unavailable, using safe direct insert fallback:', rpcError.message);
       }
 
-      // 5a. Reserve stock on inventory table
+      // 6a. Reserve stock on inventory table
       for (const item of validatedItems) {
         const inv = inventoryMap.get(item.productId);
         if (inv) {
@@ -320,7 +351,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 5b. Insert orders row
+      // 6b. Insert orders row with authoritative razorpay_order_id populated directly
       const { data: orderRow, error: orderError } = await userSupabase
         .from('orders')
         .insert({
@@ -347,12 +378,13 @@ export async function POST(req: NextRequest) {
           order_status: 'pending',
           payment_status: 'pending',
           payment_method: 'razorpay',
+          razorpay_order_id: razorpayOrderId,
         })
         .select('id')
         .single();
 
       if (orderError || !orderRow) {
-        console.error('Order insert error:', orderError);
+        console.error('Order creation failed after payment session initialized for order:', orderNumber, orderError);
         return NextResponse.json(
           { success: false, error: `Failed to create order record: ${orderError?.message || 'Database error'}` },
           { status: 500 }
@@ -361,7 +393,7 @@ export async function POST(req: NextRequest) {
 
       createdOrderId = orderRow.id;
 
-      // 5c. Insert order_items with canonical subtotal
+      // 6c. Insert order_items with canonical subtotal
       const orderItemsToInsert = validatedItems.map((item) => ({
         order_id: createdOrderId,
         product_id: item.productId,
@@ -402,7 +434,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Record audit log
+    // 7. Record audit log
     try {
       await userSupabase.from('audit_logs').insert({
         action: 'ORDER_CREATED',
@@ -413,41 +445,13 @@ export async function POST(req: NextRequest) {
           order_id: createdOrderId,
           order_number: orderNumber,
           total_amount: finalTotal,
+          razorpay_order_id: razorpayOrderId,
           item_count: validatedItems.length,
           timestamp: new Date().toISOString(),
         },
       });
     } catch (auditErr) {
       console.warn('Notice: Audit log skipped:', auditErr);
-    }
-
-    // 7. Gateway Razorpay order creation (if credentials configured)
-    let razorpayOrderId: string | null = null;
-    let razorpayConfigured = false;
-
-    if (isRazorpayConfigured()) {
-      const rzResult = await createRazorpayOrder({
-        amount: Math.round(finalTotal * 100), // in paise
-        currency: 'INR',
-        receipt: orderNumber,
-        notes: {
-          velora_order_id: createdOrderId!,
-          customer_email: shippingDetails.email,
-        },
-      });
-
-      if (rzResult.order && rzResult.order.id) {
-        razorpayOrderId = rzResult.order.id;
-        razorpayConfigured = true;
-
-        // Store razorpay_order_id on order record
-        await userSupabase
-          .from('orders')
-          .update({ razorpay_order_id: razorpayOrderId })
-          .eq('id', createdOrderId);
-      } else {
-        console.warn('Notice: Razorpay order creation warning:', rzResult.error);
-      }
     }
 
     return NextResponse.json({

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npx tsx --test tests/payment-session-persistence.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
