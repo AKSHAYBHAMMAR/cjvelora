@@ -549,7 +549,7 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
 
       const content = fs.readFileSync(migrationPath, 'utf8');
 
-      // 1. Primary 3-parameter signature
+      // 1. Primary canonical 3-parameter signature
       assert.ok(
         content.includes('FUNCTION public.finalize_order_payment(') &&
         content.includes('p_order_id uuid,') &&
@@ -558,11 +558,11 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
         'Must define 3-parameter finalize_order_payment'
       );
 
-      // 2. Overloaded JSONB parameter signature
+      // 2. No JSONB overload allowed
       assert.ok(
-        content.includes('FUNCTION public.finalize_order_payment(') &&
-        content.includes('p_params jsonb'),
-        'Must define JSONB overload for PostgREST schema cache compatibility'
+        !content.includes('finalize_order_payment(p_params jsonb)') &&
+        !content.includes('finalize_order_payment(jsonb)'),
+        'Must NOT define JSONB overload'
       );
 
       // 3. Strict authentication check
@@ -579,39 +579,61 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
         'Must reject unauthorized callers who do not own the order'
       );
 
-      // 5. Execution grants and PostgREST schema reload signal
+      // 5. Strict Execution privileges: REVOKE from public, grant authenticated and service_role (anon NOT granted)
       assert.ok(
-        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO anon, authenticated, service_role;'),
-        'Must grant execute to anon, authenticated, service_role'
+        content.includes('REVOKE ALL ON FUNCTION public.finalize_order_payment(uuid, text, text) FROM PUBLIC;'),
+        'Must revoke execute from PUBLIC'
       );
       assert.ok(
-        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(jsonb) TO anon, authenticated, service_role;'),
-        'Must grant execute on jsonb overload'
+        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO authenticated;'),
+        'Must grant execute to authenticated'
       );
+      assert.ok(
+        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO service_role;'),
+        'Must grant execute to service_role'
+      );
+      assert.ok(
+        !content.includes('TO anon'),
+        'Must strictly NOT grant execute to anon'
+      );
+
+      // 6. PostgREST schema reload signal
       assert.ok(
         content.includes("NOTIFY pgrst, 'reload schema';"),
         "Must emit NOTIFY pgrst, 'reload schema' to immediately update PostgREST schema cache"
       );
 
-      // 6. Deadlock-free inventory update order
+      // 7. Strict Inventory Validation without silent GREATEST(0, ...) clamping in function body
+      const functionBody = content.slice(content.indexOf('AS $$'));
+      assert.ok(
+        !functionBody.includes('GREATEST(0,'),
+        'Function body must NOT use GREATEST(0, ...) to silently clamp stock to zero'
+      );
+      assert.ok(
+        content.includes('IF v_current_stock < v_item.quantity THEN') &&
+        content.includes('IF v_reserved_stock < v_item.quantity THEN'),
+        'Must explicitly validate available stock and reserved stock before deduction'
+      );
       assert.ok(
         content.includes('ORDER BY product_id ASC'),
         'Must lock and update order items in deterministic order to prevent deadlocks'
       );
     });
 
-    test('Verify Route: Supports PostgREST PGRST202 schema cache JSONB fallback', async () => {
+    test('Verify Route: Calls canonical 3-parameter finalize_order_payment RPC', async () => {
       const fs = await import('fs');
       const routeContent = fs.readFileSync('src/app/api/payments/verify/route.ts', 'utf8');
 
       assert.ok(
-        routeContent.includes("finalizeRpcErr.code === 'PGRST202'") &&
-        routeContent.includes("p_params: {"),
-        'Verify route must include resilient JSONB fallback when PostgREST returns PGRST202'
+        routeContent.includes("userSupabase.rpc('finalize_order_payment', {") &&
+        routeContent.includes('p_order_id: cleanOrderId,') &&
+        routeContent.includes('p_razorpay_order_id: order.razorpay_order_id,') &&
+        routeContent.includes('p_razorpay_payment_id: cleanRzPaymentId,'),
+        'Verify route must call canonical 3-parameter RPC with clean parameters'
       );
     });
 
-    test('Complete Simulated Finalization Flow: 13-Point Regression Verification', () => {
+    test('Complete Simulated Finalization Flow: 13-Point Regression Verification with Strict Stock Validation', () => {
       // 1. Authenticated customer setup
       const customerId = 'user_uuid_customer_456';
       const orderId = 'order_uuid_target_789';
@@ -690,20 +712,29 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
           }
         });
 
-        // Point 8 & 9: Atomic Inventory conversion
+        // Point 8 & 9: Atomic Inventory conversion with strict stock validation (no clamping)
         const items = database.order_items.filter((i) => i.order_id === pOrderId);
         for (const item of items) {
           const inv = database.inventory.get(item.product_id);
-          if (inv) {
-            inv.quantity = Math.max(0, inv.quantity - item.quantity);
-            inv.reserved_quantity = Math.max(0, (inv.reserved_quantity || 0) - item.quantity);
+          if (!inv) {
+            throw new Error(`Inventory record for product ID ${item.product_id} not found.`);
           }
+          if (inv.quantity < item.quantity) {
+            throw new Error(`Insufficient stock to finalize order for product ID ${item.product_id}. Available on hand: ${inv.quantity}, Requested: ${item.quantity}`);
+          }
+          if (inv.reserved_quantity < item.quantity) {
+            throw new Error(`Reserved stock mismatch to finalize order for product ID ${item.product_id}. Reserved: ${inv.reserved_quantity}, Requested: ${item.quantity}`);
+          }
+
+          inv.quantity = inv.quantity - item.quantity;
+          inv.reserved_quantity = inv.reserved_quantity - item.quantity;
         }
 
         // Point 5, 6, 7: Mark order paid, status processing, store payment ID
         order.payment_status = 'paid';
         order.status = 'processing';
         order.order_status = 'processing';
+        order.razorpay_order_id = pRzPaymentId ? (order.razorpay_order_id || pRzOrderId) : order.razorpay_order_id;
         order.razorpay_payment_id = pRzPaymentId;
 
         return {
@@ -712,6 +743,25 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
           order_id: pOrderId,
         };
       }
+
+      // Execution Step 0: Insufficient stock fails closed and rolls back without silent clamping
+      database.inventory.set('prod_1', { product_id: 'prod_1', quantity: 1, reserved_quantity: 2 });
+      assert.throws(
+        () => simulateFinalizeRpc(customerId, orderId, rzOrderId, initialRzPaymentId),
+        /Insufficient stock to finalize order/
+      );
+      // Restore valid stock for subsequent steps
+      database.inventory.set('prod_1', { product_id: 'prod_1', quantity: 20, reserved_quantity: 2 });
+
+      // Execution Step 0b: Reserved stock shortfall fails closed
+      database.inventory.set('prod_1', { product_id: 'prod_1', quantity: 20, reserved_quantity: 0 });
+      assert.throws(
+        () => simulateFinalizeRpc(customerId, orderId, rzOrderId, initialRzPaymentId),
+        /Reserved stock mismatch to finalize order/
+      );
+      // Restore valid reserved stock
+      database.inventory.set('prod_1', { product_id: 'prod_1', quantity: 20, reserved_quantity: 2 });
+
 
       // Execution Step 1: Unauthorized customer cannot finalize
       assert.throws(

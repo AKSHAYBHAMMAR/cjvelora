@@ -1,24 +1,30 @@
 -- ==============================================================================
--- CJVELORA — DATABASE MIGRATION: COMPLETE PAYMENT FINALIZATION & SCHEMA CACHE FIX
+-- CJVELORA — REVISED DATABASE MIGRATION: CANONICAL finalize_order_payment
 -- ==============================================================================
--- Root Cause Addressed:
--- 1. PostgREST Error PGRST202 ("Could not find the function public.finalize_order_payment in the schema cache"):
---    In tightened Supabase environments, revoking execution from PUBLIC while omitting anon
---    prevents the PostgREST schema introspector from indexing the RPC function in its in-memory
---    routing cache.
--- 2. PostgREST in Supabase does NOT automatically reload its internal schema cache on manual
---    DDL executions in the SQL editor unless explicitly instructed via NOTIFY pgrst, 'reload schema'.
--- 3. Fail-Closed Authentication & Ownership Enforcement:
---    The caller check now strictly requires auth.uid() to be NOT NULL and equal to customer_id:
---      IF v_caller_id IS NULL THEN RAISE EXCEPTION 'Unauthorized: Authentication required.';
---      IF v_caller_id <> v_order_customer_id THEN RAISE EXCEPTION 'Unauthorized: You do not own this order.';
--- 4. Full Overload Support:
---    Exposes both:
---      a) 3-parameter signature: finalize_order_payment(p_order_id uuid, p_razorpay_order_id text, p_razorpay_payment_id text)
---      b) Single JSONB parameter fallback: finalize_order_payment(p_params jsonb)
--- 5. Concurrency & Deadlock Prevention:
---    Preserves SELECT ... FOR UPDATE on orders and locks order items in deterministic order
---    (ORDER BY product_id ASC) to prevent transaction deadlocks.
+-- Requirements Addressed:
+-- 1. Canonical Function Only:
+--    public.finalize_order_payment(uuid, text, text) returning jsonb.
+--    No JSONB overload or parameter tampering.
+-- 2. Strict Privilege Boundary:
+--    REVOKE ALL ON FUNCTION public.finalize_order_payment(uuid, text, text) FROM PUBLIC;
+--    GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO authenticated;
+--    GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO service_role;
+--    (anon is strictly NOT granted execute).
+-- 3. Security Definer & Search Path:
+--    SECURITY DEFINER with pinned search_path = public, pg_temp.
+-- 4. Strict Authentication & Customer Ownership:
+--    Fails closed if auth.uid() is NULL or does not match order.customer_id.
+-- 5. Strict Inventory Validation (No Silent GREATEST(0, ...) Clamping):
+--    Locks each inventory row with FOR UPDATE in sorted order (ORDER BY product_id ASC).
+--    Verifies existence, verifies quantity >= requested_quantity, and verifies
+--    reserved_quantity >= requested_quantity.
+--    If insufficient stock exists, raises an EXCEPTION and rolls back the transaction.
+-- 6. Preserved Replay, Idempotency, and Signature Guarantees:
+--    Locks order row, enforces authoritative razorpay_order_id, protects against
+--    cross-order payment replay, allows identical idempotent payment retries,
+--    and enforces unique index on razorpay_payment_id.
+-- 7. PostgREST Schema Cache Reload:
+--    Emits NOTIFY pgrst, 'reload schema' to force PostgREST to index the function.
 -- ==============================================================================
 
 -- 1. Database-Level Unique Index on razorpay_payment_id for Replay Protection
@@ -26,7 +32,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_razorpay_payment_id_unique
   ON public.orders (razorpay_payment_id)
   WHERE razorpay_payment_id IS NOT NULL;
 
--- 2. Hardened Atomic RPC: finalize_order_payment (3-Parameter Signature)
+-- 2. Hardened Canonical Atomic RPC: finalize_order_payment
 CREATE OR REPLACE FUNCTION public.finalize_order_payment(
   p_order_id uuid,
   p_razorpay_order_id text,
@@ -44,8 +50,10 @@ DECLARE
   v_existing_rz_order_id text;
   v_order_customer_id uuid;
   v_caller_id uuid;
+  v_current_stock integer;
+  v_reserved_stock integer;
 BEGIN
-  -- 1. Row-level lock on the target order to prevent concurrent race conditions
+  -- 1. Row-level lock on target order to prevent concurrent race conditions
   SELECT payment_status, razorpay_payment_id, razorpay_order_id, customer_id
   INTO v_current_payment_status, v_existing_payment_id, v_existing_rz_order_id, v_order_customer_id
   FROM public.orders
@@ -72,7 +80,7 @@ BEGIN
   END IF;
 
   -- 4. Same-order Idempotency Check:
-  -- If order was already paid, check if the payment ID matches
+  -- If order was already marked paid, check if the payment ID matches
   IF v_current_payment_status = 'paid' THEN
     IF v_existing_payment_id = p_razorpay_payment_id THEN
       RETURN jsonb_build_object(
@@ -95,16 +103,40 @@ BEGIN
     RAISE EXCEPTION 'Conflict: Razorpay payment ID has already been redeemed for another order.';
   END IF;
 
-  -- 6. Atomic Inventory Conversion: convert reserved stock to permanent sold stock
+  -- 6. Atomic Inventory Conversion with Strict Stock Validation:
+  -- Lock inventory rows in sorted order (ORDER BY product_id ASC) to prevent deadlocks
   FOR v_item IN
     SELECT product_id, quantity
     FROM public.order_items
     WHERE order_id = p_order_id
     ORDER BY product_id ASC
   LOOP
+    SELECT quantity, COALESCE(reserved_quantity, 0)
+    INTO v_current_stock, v_reserved_stock
+    FROM public.inventory
+    WHERE product_id = v_item.product_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Inventory record for product ID % not found.', v_item.product_id;
+    END IF;
+
+    -- Strict validation: do NOT silently clamp to zero.
+    -- If stock is insufficient, abort and roll back the transaction.
+    IF v_current_stock < v_item.quantity THEN
+      RAISE EXCEPTION 'Insufficient stock to finalize order for product ID %. Available on hand: %, Requested: %',
+        v_item.product_id, v_current_stock, v_item.quantity;
+    END IF;
+
+    IF v_reserved_stock < v_item.quantity THEN
+      RAISE EXCEPTION 'Reserved stock mismatch to finalize order for product ID %. Reserved: %, Requested: %',
+        v_item.product_id, v_reserved_stock, v_item.quantity;
+    END IF;
+
+    -- Deduct exact quantity from both total on-hand and reserved quantity
     UPDATE public.inventory
-    SET quantity = GREATEST(0, quantity - v_item.quantity),
-        reserved_quantity = GREATEST(0, COALESCE(reserved_quantity, 0) - v_item.quantity),
+    SET quantity = v_current_stock - v_item.quantity,
+        reserved_quantity = v_reserved_stock - v_item.quantity,
         updated_at = NOW()
     WHERE product_id = v_item.product_id;
   END LOOP;
@@ -127,32 +159,10 @@ BEGIN
 END;
 $$;
 
--- 3. Overloaded single-parameter JSONB variant for PostgREST JSON-payload RPC routing
-CREATE OR REPLACE FUNCTION public.finalize_order_payment(
-  p_params jsonb
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  RETURN public.finalize_order_payment(
-    (p_params->>'p_order_id')::uuid,
-    (p_params->>'p_razorpay_order_id')::text,
-    (p_params->>'p_razorpay_payment_id')::text
-  );
-END;
-$$;
+-- 3. Strict Privileges: Revoke public execution, grant only authenticated and service_role
+REVOKE ALL ON FUNCTION public.finalize_order_payment(uuid, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO service_role;
 
--- 4. Explicit execution grants for PostgREST schema cache discoverability
--- Safe because caller authentication (auth.uid() = customer_id) is enforced inside the functions
-GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.finalize_order_payment(jsonb) TO anon, authenticated, service_role;
-
--- Also ensure create_order_with_items and cancel_order_reservation are executable and cached
-GRANT EXECUTE ON FUNCTION public.create_order_with_items(text, uuid, text, text, text, text, text, text, text, text, text, text, text, numeric, numeric, numeric, numeric, jsonb, text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.cancel_order_reservation(uuid, text) TO anon, authenticated, service_role;
-
--- 5. Force PostgREST to reload its in-memory schema cache immediately
+-- 4. Explicitly notify PostgREST to reload its in-memory schema cache immediately
 NOTIFY pgrst, 'reload schema';
