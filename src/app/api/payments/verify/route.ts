@@ -172,11 +172,33 @@ export async function POST(req: NextRequest) {
 
     // 10. Atomic Payment Finalization via RPC
     // Converts reserved stock to sold stock and marks order paid in ONE isolated transaction
-    const { data: finalizeRpcData, error: finalizeRpcErr } = await userSupabase.rpc('finalize_order_payment', {
+    let finalizeRpcData: any = null;
+    let finalizeRpcErr: any = null;
+
+    const initialRpcRes = await userSupabase.rpc('finalize_order_payment', {
       p_order_id: cleanOrderId,
       p_razorpay_order_id: order.razorpay_order_id,
       p_razorpay_payment_id: cleanRzPaymentId,
     });
+
+    finalizeRpcData = initialRpcRes.data;
+    finalizeRpcErr = initialRpcRes.error;
+
+    // If PostgREST schema cache fails to route named arguments, attempt JSONB wrapper overload
+    if (finalizeRpcErr && finalizeRpcErr.code === 'PGRST202') {
+      const fallbackRpcRes = await userSupabase.rpc('finalize_order_payment', {
+        p_params: {
+          p_order_id: cleanOrderId,
+          p_razorpay_order_id: order.razorpay_order_id,
+          p_razorpay_payment_id: cleanRzPaymentId,
+        },
+      });
+
+      if (!fallbackRpcRes.error && fallbackRpcRes.data) {
+        finalizeRpcData = fallbackRpcRes.data;
+        finalizeRpcErr = null;
+      }
+    }
 
     if (finalizeRpcErr) {
       console.error('RPC finalize_order_payment error for order ID:', cleanOrderId, {

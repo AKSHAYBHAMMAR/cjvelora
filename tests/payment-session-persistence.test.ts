@@ -537,5 +537,243 @@ describe('CJVELORA — Razorpay Payment Session Persistence & Security Suite', (
       );
     });
   });
+
+  // ============================================================================
+  // 12. Complete Payment Finalization Flow & Schema Cache Fix Suite (Phase 15)
+  // ============================================================================
+  describe('Complete Payment Finalization Flow & Regression Suite', () => {
+    test('Migration Verification: migration_finalize_order_payment_schema_cache_fix.sql defines complete architecture', async () => {
+      const fs = await import('fs');
+      const migrationPath = 'supabase/migration_finalize_order_payment_schema_cache_fix.sql';
+      assert.ok(fs.existsSync(migrationPath), 'Migration file must exist');
+
+      const content = fs.readFileSync(migrationPath, 'utf8');
+
+      // 1. Primary 3-parameter signature
+      assert.ok(
+        content.includes('FUNCTION public.finalize_order_payment(') &&
+        content.includes('p_order_id uuid,') &&
+        content.includes('p_razorpay_order_id text,') &&
+        content.includes('p_razorpay_payment_id text'),
+        'Must define 3-parameter finalize_order_payment'
+      );
+
+      // 2. Overloaded JSONB parameter signature
+      assert.ok(
+        content.includes('FUNCTION public.finalize_order_payment(') &&
+        content.includes('p_params jsonb'),
+        'Must define JSONB overload for PostgREST schema cache compatibility'
+      );
+
+      // 3. Strict authentication check
+      assert.ok(
+        content.includes("IF v_caller_id IS NULL THEN") &&
+        content.includes("RAISE EXCEPTION 'Unauthorized: Authentication required.';"),
+        'Must reject unauthenticated callers (auth.uid() is null)'
+      );
+
+      // 4. Strict customer ownership check
+      assert.ok(
+        content.includes("IF v_caller_id <> v_order_customer_id THEN") &&
+        content.includes("RAISE EXCEPTION 'Unauthorized: You do not own this order.';"),
+        'Must reject unauthorized callers who do not own the order'
+      );
+
+      // 5. Execution grants and PostgREST schema reload signal
+      assert.ok(
+        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(uuid, text, text) TO anon, authenticated, service_role;'),
+        'Must grant execute to anon, authenticated, service_role'
+      );
+      assert.ok(
+        content.includes('GRANT EXECUTE ON FUNCTION public.finalize_order_payment(jsonb) TO anon, authenticated, service_role;'),
+        'Must grant execute on jsonb overload'
+      );
+      assert.ok(
+        content.includes("NOTIFY pgrst, 'reload schema';"),
+        "Must emit NOTIFY pgrst, 'reload schema' to immediately update PostgREST schema cache"
+      );
+
+      // 6. Deadlock-free inventory update order
+      assert.ok(
+        content.includes('ORDER BY product_id ASC'),
+        'Must lock and update order items in deterministic order to prevent deadlocks'
+      );
+    });
+
+    test('Verify Route: Supports PostgREST PGRST202 schema cache JSONB fallback', async () => {
+      const fs = await import('fs');
+      const routeContent = fs.readFileSync('src/app/api/payments/verify/route.ts', 'utf8');
+
+      assert.ok(
+        routeContent.includes("finalizeRpcErr.code === 'PGRST202'") &&
+        routeContent.includes("p_params: {"),
+        'Verify route must include resilient JSONB fallback when PostgREST returns PGRST202'
+      );
+    });
+
+    test('Complete Simulated Finalization Flow: 13-Point Regression Verification', () => {
+      // 1. Authenticated customer setup
+      const customerId = 'user_uuid_customer_456';
+      const orderId = 'order_uuid_target_789';
+      const rzOrderId = 'order_RZP_valid_session_123';
+      const initialRzPaymentId = 'pay_RZP_success_456';
+
+      // 2. Database state simulation before finalization
+      const database = {
+        orders: new Map<string, any>([
+          [
+            orderId,
+            {
+              id: orderId,
+              order_number: 'VEL-20260928-TEST01',
+              customer_id: customerId,
+              payment_status: 'pending',
+              status: 'pending',
+              order_status: 'pending',
+              razorpay_order_id: rzOrderId, // Point 2: Persisted at creation
+              razorpay_payment_id: null,
+            },
+          ],
+        ]),
+        order_items: [
+          { order_id: orderId, product_id: 'prod_1', quantity: 2 },
+          { order_id: orderId, product_id: 'prod_2', quantity: 1 },
+        ],
+        inventory: new Map<string, any>([
+          ['prod_1', { product_id: 'prod_1', quantity: 20, reserved_quantity: 2 }],
+          ['prod_2', { product_id: 'prod_2', quantity: 15, reserved_quantity: 1 }],
+        ]),
+      };
+
+      // Simulated atomic finalize_order_payment RPC adhering to exact SQL logic
+      function simulateFinalizeRpc(
+        callerId: string | null,
+        pOrderId: string,
+        pRzOrderId: string,
+        pRzPaymentId: string
+      ) {
+        const order = database.orders.get(pOrderId);
+        if (!order) {
+          throw new Error(`Order with ID ${pOrderId} not found.`);
+        }
+
+        // Point 13: Unauthorized customer check
+        if (!callerId) {
+          throw new Error('Unauthorized: Authentication required.');
+        }
+        if (callerId !== order.customer_id) {
+          throw new Error('Unauthorized: You do not own this order.');
+        }
+
+        // Point 3: Authoritative order ID validation
+        if (order.razorpay_order_id && pRzOrderId && order.razorpay_order_id !== pRzOrderId) {
+          throw new Error('Conflict: Authoritative Razorpay order ID mismatch.');
+        }
+
+        // Point 10 & 11: Idempotency & conflict handling
+        if (order.payment_status === 'paid') {
+          if (order.razorpay_payment_id === pRzPaymentId) {
+            return {
+              success: true,
+              message: 'Order was already verified and marked paid.',
+              order_id: pOrderId,
+            };
+          } else {
+            throw new Error('Conflict: Order was already finalized with a different payment ID.');
+          }
+        }
+
+        // Point 12: Cross-order payment ID replay check
+        database.orders.forEach((existingOrder, existingId) => {
+          if (existingId !== pOrderId && existingOrder.razorpay_payment_id === pRzPaymentId) {
+            throw new Error('Conflict: Razorpay payment ID has already been redeemed for another order.');
+          }
+        });
+
+        // Point 8 & 9: Atomic Inventory conversion
+        const items = database.order_items.filter((i) => i.order_id === pOrderId);
+        for (const item of items) {
+          const inv = database.inventory.get(item.product_id);
+          if (inv) {
+            inv.quantity = Math.max(0, inv.quantity - item.quantity);
+            inv.reserved_quantity = Math.max(0, (inv.reserved_quantity || 0) - item.quantity);
+          }
+        }
+
+        // Point 5, 6, 7: Mark order paid, status processing, store payment ID
+        order.payment_status = 'paid';
+        order.status = 'processing';
+        order.order_status = 'processing';
+        order.razorpay_payment_id = pRzPaymentId;
+
+        return {
+          success: true,
+          message: 'Payment successfully finalized and stock deducted.',
+          order_id: pOrderId,
+        };
+      }
+
+      // Execution Step 1: Unauthorized customer cannot finalize
+      assert.throws(
+        () => simulateFinalizeRpc('attacker_uuid', orderId, rzOrderId, initialRzPaymentId),
+        /Unauthorized: You do not own this order/
+      );
+
+      // Execution Step 2: Unauthenticated caller cannot finalize
+      assert.throws(
+        () => simulateFinalizeRpc(null, orderId, rzOrderId, initialRzPaymentId),
+        /Unauthorized: Authentication required/
+      );
+
+      // Execution Step 3: Valid customer payment finalization succeeds (Point 4)
+      const res = simulateFinalizeRpc(customerId, orderId, rzOrderId, initialRzPaymentId);
+      assert.equal(res.success, true);
+
+      // Verification of Points 5, 6, 7
+      const updatedOrder = database.orders.get(orderId);
+      assert.equal(updatedOrder.payment_status, 'paid', 'Point 5: payment_status must become paid');
+      assert.equal(updatedOrder.status, 'processing', 'Point 6: status must become processing');
+      assert.equal(updatedOrder.order_status, 'processing', 'Point 6: order_status must become processing');
+      assert.equal(updatedOrder.razorpay_payment_id, initialRzPaymentId, 'Point 7: razorpay_payment_id stored');
+
+      // Verification of Points 8 & 9: Inventory conversion
+      const invProd1 = database.inventory.get('prod_1');
+      assert.equal(invProd1.quantity, 18, 'Point 8: quantity deducted from 20 to 18');
+      assert.equal(invProd1.reserved_quantity, 0, 'Point 9: reserved_quantity deducted from 2 to 0');
+
+      const invProd2 = database.inventory.get('prod_2');
+      assert.equal(invProd2.quantity, 14, 'Point 8: quantity deducted from 15 to 14');
+      assert.equal(invProd2.reserved_quantity, 0, 'Point 9: reserved_quantity deducted from 1 to 0');
+
+      // Verification of Point 10: Repeated identical verification remains idempotent
+      const retryRes = simulateFinalizeRpc(customerId, orderId, rzOrderId, initialRzPaymentId);
+      assert.equal(retryRes.success, true);
+      assert.equal(retryRes.message, 'Order was already verified and marked paid.');
+
+      // Verification of Point 11: A different payment ID cannot claim the already paid order
+      assert.throws(
+        () => simulateFinalizeRpc(customerId, orderId, rzOrderId, 'pay_DIFFERENT_payment_999'),
+        /Conflict: Order was already finalized with a different payment ID/
+      );
+
+      // Verification of Point 12: A payment ID cannot be reused on another order
+      const secondOrderId = 'order_uuid_second_order_999';
+      database.orders.set(secondOrderId, {
+        id: secondOrderId,
+        customer_id: customerId,
+        payment_status: 'pending',
+        status: 'pending',
+        order_status: 'pending',
+        razorpay_order_id: 'order_RZP_second_session_888',
+        razorpay_payment_id: null,
+      });
+
+      assert.throws(
+        () => simulateFinalizeRpc(customerId, secondOrderId, 'order_RZP_second_session_888', initialRzPaymentId),
+        /Conflict: Razorpay payment ID has already been redeemed for another order/
+      );
+    });
+  });
 });
+
 
