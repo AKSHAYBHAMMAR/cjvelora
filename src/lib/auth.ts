@@ -187,7 +187,7 @@ export async function signInWithGoogle(nextUrl = '/account/orders'): Promise<{ e
 export async function signInCustomer(
   email: string,
   password: string
-): Promise<{ profile: CustomerProfile | null; error: string | null; isUnverified?: boolean }> {
+): Promise<{ profile: CustomerProfile | null; accessToken?: string; error: string | null; isUnverified?: boolean }> {
   try {
     if (!isSupabaseConfigured) {
       return { profile: null, error: 'Supabase is not configured. Please check your environment variables.' };
@@ -221,6 +221,17 @@ export async function signInCustomer(
       return { profile: null, error: msg || 'Invalid email or password.', isUnverified: false };
     }
 
+    // Explicit check: Ensure unverified email accounts are blocked from logging in
+    const isEmailProvider = data.user.app_metadata?.provider === 'email' || !data.user.app_metadata?.provider;
+    if (isEmailProvider && !data.user.email_confirmed_at) {
+      await supabase.auth.signOut();
+      return {
+        profile: null,
+        error: 'Please verify your email before signing in.',
+        isUnverified: true,
+      };
+    }
+
     const adminRole = await verifyAdminRole(data.user.id, data.user.email);
     if (adminRole) {
       await supabase.auth.signOut();
@@ -236,6 +247,7 @@ export async function signInCustomer(
         avatarUrl: data.user.user_metadata?.avatar_url,
         provider: data.user.app_metadata?.provider || 'email',
       },
+      accessToken: data.session?.access_token,
       error: null,
     };
   } catch (err: any) {
@@ -268,7 +280,10 @@ export async function signUpCustomer(
       email: cleanEmail,
       password,
       options: {
-        data: { full_name: cleanName },
+        data: {
+          full_name: cleanName,
+          has_logged_in: false,
+        },
         emailRedirectTo,
       },
     });
@@ -283,7 +298,14 @@ export async function signUpCustomer(
       return { profile: null, needsEmailConfirmation: false, error: 'This email is reserved for administrator access.' };
     }
 
-    const needsEmailConfirmation = !data.session;
+    // Require email confirmation: if not confirmed, ensure unverified account is never treated as authenticated
+    const isConfirmed = Boolean(data.user.email_confirmed_at);
+    const needsEmailConfirmation = !isConfirmed || !data.session;
+
+    if (needsEmailConfirmation && data.session) {
+      await supabase.auth.signOut();
+    }
+
     return {
       profile: {
         id: data.user.id,
@@ -322,6 +344,31 @@ export async function resendEmailVerification(email: string, nextUrl = '/account
     return { error: null };
   } catch (err: any) {
     return { error: err?.message || 'Failed to resend confirmation email.' };
+  }
+}
+
+/**
+ * Triggers the server-side Welcome Back notification for returning customer logins.
+ * Non-blocking and fails safely without interrupting customer flows.
+ */
+export async function triggerWelcomeBackNotification(token?: string): Promise<void> {
+  try {
+    let authToken = token;
+    if (!authToken) {
+      const { data: { session } } = await supabase.auth.getSession();
+      authToken = session?.access_token;
+    }
+    if (!authToken) return;
+
+    await fetch('/api/auth/welcome-back', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+  } catch {
+    // Non-critical background event fails safely without blocking UX
   }
 }
 

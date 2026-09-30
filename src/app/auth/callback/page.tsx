@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { verifyAdminRole, sanitizeRedirectUrl } from '@/lib/auth';
+import { verifyAdminRole, sanitizeRedirectUrl, triggerWelcomeBackNotification } from '@/lib/auth';
 
 function AuthCallbackHandler() {
   const router = useRouter();
@@ -31,7 +31,7 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Resolve destination from storage (set during signInWithGoogle) or query parameters
+        // 2. Resolve destination from storage (set during signInWithGoogle) or query parameters
         let cleanNext = '/account/orders';
         if (typeof window !== 'undefined') {
           try {
@@ -52,21 +52,21 @@ function AuthCallbackHandler() {
           }
         }
 
-        // 2. Check existing session first (auto-handled by detectSessionInUrl)
-        let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // 3. Check existing session first (auto-handled by detectSessionInUrl)
+        let { data: { session } } = await supabase.auth.getSession();
 
         // If no active session yet and code is present, exchange authorization code
         const code = searchParams.get('code');
         if (!session?.user && code) {
           const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
-            console.warn('Notice: Code exchange error:', exchangeError);
+            console.warn('Notice: Code exchange error:', exchangeError.message);
           } else if (exchangeData?.session) {
             session = exchangeData.session;
           }
         }
 
-        // 3. Verify active user
+        // 4. Verify active user
         let user = session?.user;
         if (!user) {
           const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -81,7 +81,7 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // 4. Check if this is a password recovery callback
+        // 5. Check if this is a password recovery callback
         const type = searchParams.get('type');
         if (type === 'recovery') {
           if (isMounted) {
@@ -90,12 +90,26 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // 5. Security Check: Customers must NEVER be administrators
+        // 6. Security Check: Customers must NEVER be administrators
         const adminRole = await verifyAdminRole(user.id, user.email);
         if (adminRole) {
           await supabase.auth.signOut();
           router.push('/admin/login?error=admin_account_detected');
           return;
+        }
+
+        // 7. Login Event Notification for Returning OAuth Customers
+        // Deduplicate in sessionStorage so page reload/re-render does not re-trigger
+        if (session?.access_token && type !== 'signup') {
+          const sessionCallbackKey = `velora_callback_notified_${session.access_token.slice(-16)}`;
+          try {
+            if (!sessionStorage.getItem(sessionCallbackKey)) {
+              sessionStorage.setItem(sessionCallbackKey, '1');
+              triggerWelcomeBackNotification(session.access_token);
+            }
+          } catch {
+            // Non-critical background event
+          }
         }
 
         if (isMounted) {
@@ -107,10 +121,10 @@ function AuthCallbackHandler() {
           }, 800);
         }
       } catch (err: any) {
-        console.error('Error handling auth callback:', err);
+        console.error('Error handling auth callback:', err?.message || err);
         if (isMounted) {
           setStatus('error');
-          setErrorMessage(err?.message || 'An unexpected error occurred during authentication verification.');
+          setErrorMessage('An unexpected error occurred during authentication verification.');
         }
       }
     }
@@ -129,6 +143,7 @@ function AuthCallbackHandler() {
           <AlertCircle className="w-7 h-7" />
         </div>
         <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-[0.35em] text-[#d4af37] font-semibold">CJVELORA</p>
           <h1 className="font-serif text-2xl text-white">Authentication Notice</h1>
           <p className="text-xs text-rose-300 leading-relaxed max-w-sm mx-auto">
             {errorMessage || 'Unable to complete sign-in. Please try again or use another authentication method.'}
@@ -136,7 +151,7 @@ function AuthCallbackHandler() {
         </div>
         <Link
           href="/customer/login"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#d4af37] text-black text-xs font-semibold uppercase tracking-widest hover:bg-[#e5c158] transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#d4af37] text-black text-xs font-semibold uppercase tracking-widest hover:bg-[#e5c158] transition-all focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Sign In</span>
@@ -151,7 +166,8 @@ function AuthCallbackHandler() {
         <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
           <CheckCircle2 className="w-7 h-7" />
         </div>
-        <h1 className="font-serif text-2xl text-white">Welcome Back</h1>
+        <p className="text-[10px] uppercase tracking-[0.35em] text-[#d4af37] font-semibold">CJVELORA</p>
+        <h1 className="font-serif text-2xl text-white">Welcome</h1>
         <p className="text-xs text-white/60">Redirecting to your CJVELORA destination...</p>
       </div>
     );
@@ -160,6 +176,7 @@ function AuthCallbackHandler() {
   return (
     <div className="w-full max-w-md bg-white/[0.03] border border-white/10 rounded-2xl p-8 shadow-2xl text-center space-y-4">
       <Loader2 className="w-8 h-8 animate-spin text-[#d4af37] mx-auto" />
+      <p className="text-[10px] uppercase tracking-[0.35em] text-[#d4af37] font-semibold">CJVELORA</p>
       <h1 className="font-serif text-2xl text-white">Verifying Identity</h1>
       <p className="text-xs text-white/50">Securing your private customer session...</p>
     </div>
@@ -171,7 +188,7 @@ export default function AuthCallbackPage() {
     <main className="min-h-screen bg-[#0a0e14] text-white flex items-center justify-center px-4 py-20">
       <Suspense
         fallback={
-          <div className="flex items-center justify-center text-white">
+          <div className="flex items-center justify-center text-white" aria-busy="true">
             <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
           </div>
         }

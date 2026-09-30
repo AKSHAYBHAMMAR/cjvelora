@@ -1,10 +1,16 @@
 'use client';
 
-import React, { FormEvent, useState, Suspense } from 'react';
+import React, { FormEvent, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2, LockKeyhole, Mail, Eye, EyeOff, RefreshCw } from 'lucide-react';
-import { signInCustomer, signInWithGoogle, resendEmailVerification, sanitizeRedirectUrl } from '@/lib/auth';
+import {
+  signInCustomer,
+  signInWithGoogle,
+  resendEmailVerification,
+  sanitizeRedirectUrl,
+  triggerWelcomeBackNotification,
+} from '@/lib/auth';
 
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -42,8 +48,18 @@ function CustomerLoginForm() {
   const [isUnverified, setIsUnverified] = useState(false);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // 60-second cooldown timer for resending verification email
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   const handleEmailSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,6 +79,11 @@ function CustomerLoginForm() {
       return;
     }
 
+    // Trigger returning customer Welcome Back notification (background event, non-blocking)
+    if (result.accessToken) {
+      triggerWelcomeBackNotification(result.accessToken);
+    }
+
     router.push(next);
     router.refresh();
   };
@@ -79,7 +100,7 @@ function CustomerLoginForm() {
   };
 
   const handleResendVerification = async () => {
-    if (!email.trim() || resending) return;
+    if (!email.trim() || resending || cooldown > 0) return;
     setResending(true);
     setResendStatus(null);
 
@@ -90,6 +111,7 @@ function CustomerLoginForm() {
       setResendStatus(`Failed to resend: ${result.error}`);
     } else {
       setResendStatus('A verification link has been sent to your email.');
+      setCooldown(60);
     }
   };
 
@@ -97,7 +119,7 @@ function CustomerLoginForm() {
     <div className="w-full max-w-md">
       <Link
         href="/"
-        className="inline-flex items-center text-xs uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-8 transition-colors"
+        className="inline-flex items-center text-xs uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-8 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#d4af37] rounded-sm"
       >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
       </Link>
@@ -105,28 +127,33 @@ function CustomerLoginForm() {
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 sm:p-9 shadow-2xl">
         {/* Brand Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">VELORA</p>
-          <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Welcome Back</h1>
-          <p className="text-xs sm:text-sm text-white/50 mt-2">Sign in to your private customer account.</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[#d4af37] font-semibold">CJVELORA</p>
+          <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Welcome back</h1>
+          <p className="text-xs sm:text-sm text-white/50 mt-1.5 sm:mt-2">Sign in to your account</p>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300 animate-fade-in space-y-2">
+          <div
+            role="alert"
+            className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300 animate-fade-in space-y-2"
+          >
             <p>{error}</p>
             {isUnverified && (
               <div className="pt-2 border-t border-rose-500/20">
                 <button
                   type="button"
                   onClick={handleResendVerification}
-                  disabled={resending}
-                  className="inline-flex items-center gap-1.5 text-[#d4af37] hover:underline font-medium cursor-pointer disabled:opacity-50"
+                  disabled={resending || cooldown > 0}
+                  className="inline-flex items-center gap-1.5 text-[#d4af37] hover:underline font-medium cursor-pointer disabled:opacity-60 focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded-sm"
                 >
                   {resending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <RefreshCw className="w-3.5 h-3.5" />
                   )}
-                  <span>Resend verification email</span>
+                  <span>
+                    {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend verification email'}
+                  </span>
                 </button>
                 {resendStatus && (
                   <p className="mt-1.5 text-[11px] text-emerald-400">{resendStatus}</p>
@@ -143,7 +170,8 @@ function CustomerLoginForm() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
-              className="w-full rounded-xl border border-white/15 bg-white/5 py-3.5 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+              aria-label="Continue with Google"
+              className="w-full rounded-xl border border-white/15 bg-white/5 py-3.5 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm focus-visible:ring-2 focus-visible:ring-[#d4af37] focus-visible:outline-none"
             >
               {googleLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-[#d4af37]" />
@@ -155,7 +183,7 @@ function CustomerLoginForm() {
           </div>
 
           {/* Divider */}
-          <div className="flex items-center gap-4 my-2">
+          <div className="flex items-center gap-4 my-2" aria-hidden="true">
             <div className="flex-1 h-px bg-white/10" />
             <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">OR</span>
             <div className="flex-1 h-px bg-white/10" />
@@ -164,16 +192,22 @@ function CustomerLoginForm() {
           {/* Email + Password Form */}
           <form onSubmit={handleEmailSignIn} className="space-y-4">
             <div>
-              <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email</label>
+              <label
+                htmlFor="login-email"
+                className="block text-xs uppercase tracking-wider text-white/60 mb-2"
+              >
+                Email
+              </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
+                  id="login-email"
                   type="email"
                   required
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
                   placeholder="you@example.com"
                 />
               </div>
@@ -181,10 +215,15 @@ function CustomerLoginForm() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs uppercase tracking-wider text-white/60">Password</label>
+                <label
+                  htmlFor="login-password"
+                  className="block text-xs uppercase tracking-wider text-white/60"
+                >
+                  Password
+                </label>
                 <Link
                   href="/customer/forgot-password"
-                  className="text-xs text-[#d4af37] hover:underline"
+                  className="text-xs text-[#d4af37] hover:underline focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded-sm"
                 >
                   Forgot password?
                 </Link>
@@ -192,19 +231,20 @@ function CustomerLoginForm() {
               <div className="relative">
                 <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
                   placeholder="Your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -214,7 +254,7 @@ function CustomerLoginForm() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2"
+              className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -230,17 +270,17 @@ function CustomerLoginForm() {
             Don&apos;t have an account?{' '}
             <Link
               href={`/customer/register?next=${encodeURIComponent(next)}`}
-              className="text-[#d4af37] hover:underline font-medium"
+              className="text-[#d4af37] hover:underline font-medium focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded-sm"
             >
               Create account
             </Link>
           </div>
 
-          {/* Separate Admin Portal Link */}
+          {/* Admin Access Link */}
           <div className="pt-2 text-center">
             <Link
               href="/admin/login"
-              className="text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors"
+              className="text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded-sm"
             >
               Administrator Access
             </Link>
@@ -256,7 +296,7 @@ export default function CustomerLoginPage() {
     <main className="min-h-screen bg-[#0a0e14] text-white flex items-center justify-center px-4 py-20">
       <Suspense
         fallback={
-          <div className="flex items-center justify-center text-white">
+          <div className="flex items-center justify-center text-white" aria-busy="true">
             <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
           </div>
         }

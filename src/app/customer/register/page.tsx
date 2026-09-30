@@ -51,6 +51,19 @@ function CustomerRegisterForm() {
     e.preventDefault();
     setError(null);
 
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    if (!cleanEmail) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
@@ -62,7 +75,7 @@ function CustomerRegisterForm() {
     }
 
     setLoading(true);
-    const result = await signUpCustomer(fullName, email, password, next);
+    const result = await signUpCustomer(cleanName, cleanEmail, password, next);
     setLoading(false);
 
     if (result.error) {
@@ -94,7 +107,7 @@ function CustomerRegisterForm() {
     <div className="w-full max-w-md">
       <Link
         href="/"
-        className="inline-flex items-center text-xs uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-8 transition-colors"
+        className="inline-flex items-center text-xs uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-8 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#d4af37] rounded-sm"
       >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Boutique
       </Link>
@@ -110,13 +123,16 @@ function CustomerRegisterForm() {
           <div className="space-y-6">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#d4af37]">VELORA</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-[#d4af37] font-semibold">CJVELORA</p>
               <h1 className="font-serif text-2xl sm:text-3xl mt-1.5 sm:mt-2 text-white">Create Account</h1>
               <p className="text-xs sm:text-sm text-white/50 mt-1.5 sm:mt-2">Join our private clientele for bespoke crochet luxury.</p>
             </div>
 
             {error && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300 animate-fade-in">
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300 animate-fade-in"
+              >
                 {error}
               </div>
             )}
@@ -127,7 +143,8 @@ function CustomerRegisterForm() {
                 type="button"
                 onClick={handleGoogleSignUp}
                 disabled={googleLoading || loading}
-                className="w-full rounded-xl border border-white/15 bg-white/5 py-3.5 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+                aria-label="Continue with Google"
+                className="w-full rounded-xl border border-white/15 bg-white/5 py-3.5 px-4 text-xs font-medium uppercase tracking-wider text-white hover:bg-white/10 hover:border-white/30 disabled:opacity-50 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-sm focus-visible:ring-2 focus-visible:ring-[#d4af37] focus-visible:outline-none"
               >
                 {googleLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-[#d4af37]" />
@@ -139,65 +156,83 @@ function CustomerRegisterForm() {
             </div>
 
             {/* Divider */}
-            <div className="flex items-center gap-4 my-2">
+            <div className="flex items-center gap-4 my-2" aria-hidden="true">
               <div className="flex-1 h-px bg-white/10" />
               <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">OR</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
             {/* Registration Form */}
-            <form onSubmit={handleEmailSignUp} className="space-y-4">
+            <form onSubmit={handleEmailSignUp} className="space-y-4" noValidate={false}>
               <div>
-                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Full Name</label>
+                <label
+                  htmlFor="register-fullname"
+                  className="block text-xs uppercase tracking-wider text-white/60 mb-2"
+                >
+                  Full Name
+                </label>
                 <div className="relative">
                   <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <input
+                    id="register-fullname"
                     type="text"
                     required
                     autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
                     placeholder="Your full name"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Email</label>
+                <label
+                  htmlFor="register-email"
+                  className="block text-xs uppercase tracking-wider text-white/60 mb-2"
+                >
+                  Email
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <input
+                    id="register-email"
                     type="email"
                     required
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
                     placeholder="you@example.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Password</label>
+                <label
+                  htmlFor="register-password"
+                  className="block text-xs uppercase tracking-wider text-white/60 mb-2"
+                >
+                  Password
+                </label>
                 <div className="relative">
                   <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <input
+                    id="register-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     minLength={8}
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
                     placeholder="At least 8 characters"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -205,24 +240,30 @@ function CustomerRegisterForm() {
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">Confirm Password</label>
+                <label
+                  htmlFor="register-confirm-password"
+                  className="block text-xs uppercase tracking-wider text-white/60 mb-2"
+                >
+                  Confirm Password
+                </label>
                 <div className="relative">
                   <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <input
+                    id="register-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
                     minLength={8}
                     autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37]"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-sm text-white placeholder-white/25 outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
                     placeholder="Confirm your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1 cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -232,7 +273,7 @@ function CustomerRegisterForm() {
               <button
                 type="submit"
                 disabled={loading || googleLoading}
-                className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2"
+                className="w-full rounded-xl bg-[#d4af37] py-3.5 text-xs font-semibold uppercase tracking-widest text-black hover:bg-[#e5c158] disabled:opacity-60 transition-colors shadow-md cursor-pointer mt-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
@@ -248,7 +289,7 @@ function CustomerRegisterForm() {
               Already have an account?{' '}
               <Link
                 href={`/customer/login?next=${encodeURIComponent(next)}`}
-                className="text-[#d4af37] hover:underline font-medium"
+                className="text-[#d4af37] hover:underline font-medium focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#d4af37] rounded-sm"
               >
                 Sign in
               </Link>
@@ -265,7 +306,7 @@ export default function CustomerRegisterPage() {
     <main className="min-h-screen bg-[#0a0e14] text-white flex items-center justify-center px-4 py-20">
       <Suspense
         fallback={
-          <div className="flex items-center justify-center text-white">
+          <div className="flex items-center justify-center text-white" aria-busy="true">
             <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
           </div>
         }
