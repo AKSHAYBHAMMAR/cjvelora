@@ -185,24 +185,43 @@ export default function Navbar() {
           {/* Center Brand Identity */}
           <Link
             href={isHome ? '#hero' : '/'}
-            className="flex flex-col items-center group cursor-pointer text-center"
+            aria-label="CJ's Velora — Soft Luxury Handmade Crochet"
+            className="flex flex-col items-center group cursor-pointer text-center select-none"
           >
-            <span
-              className={`font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-tight transition-colors duration-300 ${
-                isDarkHeader
-                  ? 'text-white group-hover:text-[#d4af37]'
-                  : 'text-charcoal group-hover:text-soft-gold'
-              }`}
-            >
-              VELORA
-            </span>
-            <span
-              className={`font-tech text-[8px] sm:text-[9px] uppercase tracking-[0.25em] sm:tracking-[0.35em] -mt-1 transition-colors ${
-                isDarkHeader ? 'text-[#d4af37]/80' : 'text-olive-accent'
-              }`}
-            >
-              Handmade Luxury
-            </span>
+            <span className="sr-only">CJ&#39;s Velora — Soft Luxury Handmade Crochet</span>
+            <div className="relative inline-flex flex-col items-center" aria-hidden="true">
+              {/* Wordmark Container with offset prefix */}
+              <div className="relative inline-block leading-none pt-2 sm:pt-2.5 md:pt-3">
+                {/* "cj’s" positioned above the left shoulder of the large V */}
+                <span
+                  className={`absolute left-0 top-0 -translate-y-[15%] sm:-translate-y-[20%] font-serif italic text-[10px] xs:text-[11px] sm:text-[13px] md:text-[15px] lg:text-[16px] font-normal tracking-wide transition-colors duration-300 ${
+                    isDarkHeader
+                      ? 'text-white/85 group-hover:text-[#d4af37]'
+                      : 'text-charcoal/80 group-hover:text-soft-gold'
+                  }`}
+                >
+                  cj’s
+                </span>
+                {/* Dominant "VELORA" display serif */}
+                <span
+                  className={`font-serif text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold tracking-tight transition-colors duration-300 block ${
+                    isDarkHeader
+                      ? 'text-white group-hover:text-[#d4af37]'
+                      : 'text-charcoal group-hover:text-soft-gold'
+                  }`}
+                >
+                  VELORA
+                </span>
+              </div>
+              {/* Tagline centered underneath */}
+              <span
+                className={`font-tech text-[6.5px] xs:text-[7.5px] sm:text-[8.5px] md:text-[9.5px] uppercase tracking-[0.22em] sm:tracking-[0.28em] md:tracking-[0.32em] mt-1 sm:mt-1.5 transition-colors duration-300 whitespace-nowrap ${
+                  isDarkHeader ? 'text-[#d4af37]/80 group-hover:text-[#d4af37]' : 'text-olive-accent group-hover:text-soft-gold'
+                }`}
+              >
+                SOFT LUXURY • HANDMADE CROCHET
+              </span>
+            </div>
           </Link>
 
           {/* Right Navigation & Interactive Actions */}
@@ -392,21 +411,33 @@ export default function Navbar() {
           <X className="w-8 h-8 stroke-[1.5]" />
         </button>
 
-        <div className="flex flex-col items-center mb-2">
-          <span
-            className={`font-serif text-3xl font-bold tracking-tight ${
-              isDarkHeader ? 'text-white' : 'text-charcoal'
-            }`}
-          >
-            VELORA
-          </span>
-          <span
-            className={`font-tech text-[10px] uppercase tracking-[0.35em] mt-1 ${
-              isDarkHeader ? 'text-[#d4af37]' : 'text-olive-accent'
-            }`}
-          >
-            Handmade Luxury
-          </span>
+        <div className="flex flex-col items-center mb-2 select-none" aria-label="CJ's Velora — Soft Luxury Handmade Crochet">
+          <span className="sr-only">CJ&#39;s Velora — Soft Luxury Handmade Crochet</span>
+          <div className="relative inline-flex flex-col items-center" aria-hidden="true">
+            <div className="relative inline-block leading-none pt-2.5">
+              <span
+                className={`absolute left-0 top-0 -translate-y-[15%] font-serif italic text-xs font-normal tracking-wide transition-colors ${
+                  isDarkHeader ? 'text-white/85' : 'text-charcoal/80'
+                }`}
+              >
+                cj’s
+              </span>
+              <span
+                className={`font-serif text-3xl font-bold tracking-tight block ${
+                  isDarkHeader ? 'text-white' : 'text-charcoal'
+                }`}
+              >
+                VELORA
+              </span>
+            </div>
+            <span
+              className={`font-tech text-[8px] uppercase tracking-[0.28em] mt-1.5 whitespace-nowrap ${
+                isDarkHeader ? 'text-[#d4af37]' : 'text-olive-accent'
+              }`}
+            >
+              SOFT LUXURY • HANDMADE CROCHET
+            </span>
+          </div>
         </div>
 
         <Link
