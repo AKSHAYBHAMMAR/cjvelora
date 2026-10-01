@@ -145,6 +145,7 @@ export type OrderStatus =
   | 'pending'
   | 'processing'
   | 'shipped'
+  | 'out_for_delivery'
   | 'delivered'
   | 'cancelled'
   | 'refunded';
@@ -189,6 +190,14 @@ export interface AdminOrder {
   shippingPostalCode?: string;
   shippingCountry?: string;
   shippingPhone?: string;
+
+  // Shipping & Logistics Fulfillment
+  shippingProvider?: string;
+  shippingTrackingNumber?: string;
+  shippingTrackingUrl?: string;
+  shippingDispatchedAt?: string;
+  shippingEstimatedDelivery?: string;
+  shippingNotes?: string;
 
   subtotal: number;
   discount: number;

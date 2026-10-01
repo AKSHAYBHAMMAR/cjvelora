@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "npx tsx --test tests/payment-session-persistence.test.ts tests/auth-email-verification.test.ts"
+    "test": "npx tsx --test tests/payment-session-persistence.test.ts tests/auth-email-verification.test.ts tests/shipping-management.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",

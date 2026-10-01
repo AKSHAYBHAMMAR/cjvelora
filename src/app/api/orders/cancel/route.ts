@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (orderStatus === 'shipped') {
+    if (orderStatus === 'shipped' || orderStatus === 'out_for_delivery') {
       return NextResponse.json(
         { success: false, error: 'Orders that have already been dispatched for delivery cannot be cancelled.' },
         { status: 400 }

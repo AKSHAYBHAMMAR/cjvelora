@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       'pending',
       'processing',
       'shipped',
+      'out_for_delivery',
       'delivered',
       'cancelled',
       'refunded',

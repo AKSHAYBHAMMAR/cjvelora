@@ -254,12 +254,14 @@ export default function AdminOrdersPage() {
     switch (status) {
       case 'delivered':
         return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+      case 'out_for_delivery':
+        return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
       case 'shipped':
         return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
       case 'processing':
         return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
       case 'pending':
-        return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+        return 'bg-soft-gold/20 text-soft-gold border-soft-gold/30';
       case 'cancelled':
         return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
       case 'refunded':
@@ -404,6 +406,7 @@ export default function AdminOrdersPage() {
               <option value="pending">Pending</option>
               <option value="processing">Processing</option>
               <option value="shipped">Shipped</option>
+              <option value="out_for_delivery">Out for Delivery</option>
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
               <option value="refunded">Refunded</option>
@@ -525,8 +528,16 @@ export default function AdminOrdersPage() {
                         order.orderStatus
                       )}`}
                     >
-                      {order.orderStatus}
+                      {order.orderStatus.replace(/_/g, ' ')}
                     </span>
+                    {order.shippingProvider && (
+                      <div className="flex items-center gap-1 font-tech text-[10px] text-ivory/60 mt-1">
+                        <Truck className="w-3 h-3 text-soft-gold shrink-0" />
+                        <span className="truncate max-w-[120px]" title={`${order.shippingProvider}${order.shippingTrackingNumber ? `: ${order.shippingTrackingNumber}` : ''}`}>
+                          {order.shippingProvider}
+                        </span>
+                      </div>
+                    )}
                   </td>
 
                   {/* Payment Method */}
@@ -806,6 +817,74 @@ export default function AdminOrdersPage() {
                       .join(', ')}
                   </p>
                 </div>
+
+                {/* Logistics & Consignment Info Card (when shipping details exist) */}
+                {(selectedOrder.shippingProvider || selectedOrder.shippingTrackingNumber || selectedOrder.shippingDispatchedAt) && (
+                  <div className="sm:col-span-2 p-4 rounded-2xl bg-soft-gold/5 border border-soft-gold/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-soft-gold font-tech text-[10px] uppercase tracking-wider font-bold">
+                        <Truck className="w-3.5 h-3.5" />
+                        <span>Logistics & Shipment Details</span>
+                      </div>
+                      <Link
+                        href={`/admin/orders/${selectedOrder.id}`}
+                        className="text-[10px] font-tech text-soft-gold hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Manage Shipping</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                      <div>
+                        <span className="text-[10px] font-tech text-ivory/50 block">Courier</span>
+                        <span className="font-semibold text-white">{selectedOrder.shippingProvider || 'Assigned'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-tech text-ivory/50 block">Tracking Number</span>
+                        <span className="font-mono text-soft-gold font-bold">{selectedOrder.shippingTrackingNumber || 'N/A'}</span>
+                      </div>
+                      {selectedOrder.shippingDispatchedAt && (
+                        <div>
+                          <span className="text-[10px] font-tech text-ivory/50 block">Dispatched</span>
+                          <span className="text-white">
+                            {new Date(selectedOrder.shippingDispatchedAt).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {selectedOrder.shippingEstimatedDelivery && (
+                        <div>
+                          <span className="text-[10px] font-tech text-ivory/50 block">Expected Delivery</span>
+                          <span className="text-white">
+                            {new Date(selectedOrder.shippingEstimatedDelivery).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedOrder.shippingTrackingUrl && (
+                      <div className="pt-1.5 border-t border-white/5 flex items-center justify-between">
+                        <span className="font-tech text-[10px] text-ivory/50">Tracking Webpage:</span>
+                        <a
+                          href={selectedOrder.shippingTrackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-tech text-[10px] text-soft-gold hover:underline inline-flex items-center gap-1"
+                        >
+                          <span>Open Carrier Tracking Page</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Order Items Snapshot Table */}

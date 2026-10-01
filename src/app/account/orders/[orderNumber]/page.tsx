@@ -19,6 +19,8 @@ import {
   XCircle,
   RotateCcw,
   RefreshCw,
+  Send,
+  ExternalLink,
 } from 'lucide-react';
 import CancelOrderModal from '@/components/orders/CancelOrderModal';
 
@@ -297,6 +299,8 @@ export default function CustomerOrderDetailPage() {
         return 'Your handcrafted pieces are currently being prepared.';
       case 'shipped':
         return 'Your order has been dispatched and is on its way to you.';
+      case 'out_for_delivery':
+        return 'Your handcrafted parcel is out for delivery with your local courier today.';
       case 'delivered':
       case 'completed':
         return 'Your order has been delivered. We hope you enjoy your handcrafted pieces.';
@@ -353,7 +357,7 @@ export default function CustomerOrderDetailPage() {
       name: 'Processing',
       statusText: 'Handcrafted preparation',
       state:
-        normStatus === 'shipped' || normStatus === 'delivered'
+        normStatus === 'shipped' || normStatus === 'out_for_delivery' || normStatus === 'delivered'
           ? 'completed'
           : normStatus === 'processing'
           ? 'current'
@@ -363,14 +367,26 @@ export default function CustomerOrderDetailPage() {
     {
       id: 'shipped',
       name: 'Shipped',
-      statusText: 'Dispatched with courier',
+      statusText: order.shipping_provider ? `Dispatched via ${order.shipping_provider}` : 'Dispatched with courier',
       state:
-        normStatus === 'delivered'
+        normStatus === 'out_for_delivery' || normStatus === 'delivered'
           ? 'completed'
           : normStatus === 'shipped'
           ? 'current'
           : 'upcoming',
       icon: Truck,
+    },
+    {
+      id: 'out_for_delivery',
+      name: 'Out for Delivery',
+      statusText: 'With local courier',
+      state:
+        normStatus === 'delivered'
+          ? 'completed'
+          : normStatus === 'out_for_delivery'
+          ? 'current'
+          : 'upcoming',
+      icon: Send,
     },
     {
       id: 'delivered',
@@ -384,6 +400,8 @@ export default function CustomerOrderDetailPage() {
   const CurrentStatusIcon =
     normStatus === 'delivered'
       ? CheckCircle2
+      : normStatus === 'out_for_delivery'
+      ? Send
       : normStatus === 'shipped'
       ? Truck
       : normStatus === 'processing'
@@ -442,12 +460,14 @@ export default function CustomerOrderDetailPage() {
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                   : displayStatus === 'cancelled' || displayStatus === 'refunded'
                   ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                  : displayStatus === 'out_for_delivery'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : displayStatus === 'shipped'
                   ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
                   : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
               }`}
             >
-              Order: {displayStatus}
+              Order: {displayStatus.replace(/_/g, ' ')}
             </span>
             <span
               className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
@@ -567,7 +587,7 @@ export default function CustomerOrderDetailPage() {
             </div>
 
             {/* Desktop / Tablet Horizontal Timeline (md+) */}
-            <div className="hidden md:grid grid-cols-5 relative">
+            <div className="hidden md:grid grid-cols-6 relative">
               {stages.map((stage, idx) => {
                 const isFinalDeliveredCompleted =
                   stage.id === 'delivered' && stage.state === 'completed';
@@ -740,8 +760,102 @@ export default function CustomerOrderDetailPage() {
               })}
             </div>
 
+            {/* Consignment & Shipment Details Card (rendered when shipping data exists) */}
+            {(order.shipping_provider || order.shipping_tracking_number || order.shipping_dispatched_at || order.shipping_estimated_delivery) && (
+              <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-white/[0.03] border border-[#d4af37]/30 backdrop-blur-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2.5 rounded-xl bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20 shrink-0">
+                      <Truck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-[#d4af37] font-semibold block">
+                        Courier Consignment
+                      </span>
+                      <h3 className="text-sm sm:text-base font-serif text-white font-medium">
+                        Shipment Tracking
+                      </h3>
+                    </div>
+                  </div>
+
+                  {order.shipping_tracking_url && (
+                    <a
+                      href={order.shipping_tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#d4af37] hover:bg-[#e5c158] text-black text-xs font-semibold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(212,175,55,0.25)] shrink-0 cursor-pointer"
+                    >
+                      <span>Track Shipment</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
+                  {order.shipping_provider && (
+                    <div>
+                      <span className="text-white/40 block text-[10px] uppercase tracking-wider mb-0.5">
+                        Shipping Provider
+                      </span>
+                      <span className="font-serif text-white font-semibold text-sm">
+                        {order.shipping_provider}
+                      </span>
+                    </div>
+                  )}
+
+                  {order.shipping_tracking_number && (
+                    <div>
+                      <span className="text-white/40 block text-[10px] uppercase tracking-wider mb-0.5">
+                        Tracking Number
+                      </span>
+                      <span className="font-mono text-[#d4af37] font-bold text-xs select-all">
+                        {order.shipping_tracking_number}
+                      </span>
+                    </div>
+                  )}
+
+                  {order.shipping_dispatched_at && (
+                    <div>
+                      <span className="text-white/40 block text-[10px] uppercase tracking-wider mb-0.5">
+                        Dispatched
+                      </span>
+                      <span className="text-white font-medium">
+                        {new Date(order.shipping_dispatched_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                  )}
+
+                  {order.shipping_estimated_delivery && (
+                    <div>
+                      <span className="text-white/40 block text-[10px] uppercase tracking-wider mb-0.5">
+                        Estimated Delivery
+                      </span>
+                      <span className="text-emerald-300 font-medium">
+                        {new Date(order.shipping_estimated_delivery).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {order.shipping_notes && (
+                  <div className="mt-3 pt-3 border-t border-white/5 text-[11px] text-white/60">
+                    <span className="text-white/40 uppercase text-[9px] tracking-wider block mb-0.5">Logistics Note:</span>
+                    <span>{order.shipping_notes}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Contextual Status Banner */}
-            <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/[0.01] p-4 rounded-xl">
+            <div className="mt-6 pt-6 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/[0.01] p-4 rounded-xl">
               <div className="flex items-start sm:items-center space-x-3">
                 <div className="p-2 rounded-lg bg-[#d4af37]/10 text-[#d4af37] shrink-0">
                   <CurrentStatusIcon className="w-4 h-4" />

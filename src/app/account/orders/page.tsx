@@ -222,10 +222,14 @@ export default function CustomerOrdersPage() {
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                               : displayStatus === 'cancelled' || displayStatus === 'refunded'
                               ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : displayStatus === 'out_for_delivery'
+                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                              : displayStatus === 'shipped'
+                              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
                               : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                           }`}
                         >
-                          {displayStatus}
+                          {displayStatus.replace(/_/g, ' ')}
                         </span>
                         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-white/5 text-white/70 border border-white/10">
                           Payment: {paymentStatus}

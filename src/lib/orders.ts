@@ -10,7 +10,8 @@ export type { OrderStatus, PaymentStatus };
 export const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped: ['delivered'],
+  shipped: ['out_for_delivery', 'delivered'],
+  out_for_delivery: ['delivered'],
   delivered: ['refunded'],
   cancelled: [], // Terminal state
   refunded: [], // Terminal state
@@ -90,6 +91,14 @@ export function mapSupabaseOrder(row: any, items: any[] = []): AdminOrder {
     shippingPostalCode: row.shipping_postal_code || row.postal_code || row.zip || undefined,
     shippingCountry: row.shipping_country || row.country || 'India',
     shippingPhone: row.shipping_phone || row.customer_phone || row.phone || undefined,
+
+    // Shipping & Logistics Fulfillment
+    shippingProvider: row.shipping_provider || undefined,
+    shippingTrackingNumber: row.shipping_tracking_number || undefined,
+    shippingTrackingUrl: row.shipping_tracking_url || undefined,
+    shippingDispatchedAt: row.shipping_dispatched_at || undefined,
+    shippingEstimatedDelivery: row.shipping_estimated_delivery || undefined,
+    shippingNotes: row.shipping_notes || undefined,
 
     subtotal: Number(subtotal),
     discount: Number(discount),
@@ -216,3 +225,49 @@ export async function updateOrderStatus(params: {
     };
   }
 }
+
+export interface UpdateOrderShippingParams {
+  orderId: string;
+  shippingProvider?: string;
+  shippingTrackingNumber?: string;
+  shippingTrackingUrl?: string;
+  shippingDispatchedAt?: string;
+  shippingEstimatedDelivery?: string;
+  shippingNotes?: string;
+  newStatus?: OrderStatus;
+  adminProfile?: { id: string; email: string; role: string } | null;
+}
+
+/**
+ * Triggers a secure server-side shipping details & status update via the dedicated admin shipping API.
+ */
+export async function updateOrderShipping(
+  params: UpdateOrderShippingParams
+): Promise<{ success: boolean; message?: string; error?: string; order?: any }> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    const res = await fetch('/api/admin/orders/shipping', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to update shipping information.' };
+    }
+
+    return { success: true, message: data.message, order: data.order };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'Network error updating shipping information.',
+    };
+  }
+}
+
