@@ -475,9 +475,12 @@ export default function AdminOrdersPage() {
                 <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
                   {/* Order Number */}
                   <td className="py-4 px-6 whitespace-nowrap">
-                    <span className="font-tech font-bold text-white group-hover:text-soft-gold transition-colors">
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      className="font-tech font-bold text-white group-hover:text-soft-gold transition-colors hover:underline"
+                    >
                       {order.orderNumber}
-                    </span>
+                    </Link>
                   </td>
 
                   {/* Customer */}
@@ -549,13 +552,13 @@ export default function AdminOrdersPage() {
 
                   {/* Action Button */}
                   <td className="py-4 px-6 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => handleOpenDetails(order)}
+                    <Link
+                      href={`/admin/orders/${order.id}`}
                       className="px-3 py-1.5 rounded-lg bg-soft-gold/10 hover:bg-soft-gold/20 text-soft-gold text-xs font-sans font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>View Details</span>
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -622,12 +625,23 @@ export default function AdminOrdersPage() {
                   </p>
                 </div>
 
-                <button
-                  onClick={handleCloseDetails}
-                  className="p-2 rounded-xl text-ivory/40 hover:text-white hover:bg-white/5 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/admin/orders/${selectedOrder.id}`}
+                    className="px-3 py-1.5 rounded-lg bg-soft-gold text-charcoal font-sans text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#c29e2e] transition-colors"
+                  >
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>Manage Shipping & Details</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+
+                  <button
+                    onClick={handleCloseDetails}
+                    className="p-2 rounded-xl text-ivory/40 hover:text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Status Update Alert / Error */}
@@ -656,8 +670,8 @@ export default function AdminOrdersPage() {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between text-xs pt-1">
-                    {['pending', 'processing', 'shipped', 'delivered'].map((step, idx, arr) => {
-                      const orderSteps = ['pending', 'processing', 'shipped', 'delivered'];
+                    {['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered'].map((step, idx, arr) => {
+                      const orderSteps = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered'];
                       const currentIdx = orderSteps.indexOf(selectedOrder.orderStatus);
                       const isComplete = currentIdx >= idx;
                       const isCurrent = currentIdx === idx;
@@ -679,7 +693,7 @@ export default function AdminOrdersPage() {
                                 isCurrent ? 'text-soft-gold font-bold' : isComplete ? 'text-white' : 'text-ivory/40'
                               }`}
                             >
-                              {step}
+                              {step.replace(/_/g, ' ')}
                             </span>
                           </div>
                           {idx < arr.length - 1 && (
@@ -818,8 +832,8 @@ export default function AdminOrdersPage() {
                   </p>
                 </div>
 
-                {/* Logistics & Consignment Info Card (when shipping details exist) */}
-                {(selectedOrder.shippingProvider || selectedOrder.shippingTrackingNumber || selectedOrder.shippingDispatchedAt) && (
+                {/* Logistics & Consignment Info Card */}
+                {selectedOrder.shippingProvider || selectedOrder.shippingTrackingNumber || selectedOrder.shippingDispatchedAt ? (
                   <div className="sm:col-span-2 p-4 rounded-2xl bg-soft-gold/5 border border-soft-gold/20 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-soft-gold font-tech text-[10px] uppercase tracking-wider font-bold">
@@ -883,6 +897,23 @@ export default function AdminOrdersPage() {
                         </a>
                       </div>
                     )}
+                  </div>
+                ) : (
+                  <div className="sm:col-span-2 p-4 rounded-2xl bg-white/[0.02] border border-dashed border-white/15 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5">
+                      <Truck className="w-4 h-4 text-soft-gold" />
+                      <div>
+                        <p className="font-tech text-xs text-white font-medium">No Consignment / Tracking Assigned</p>
+                        <p className="font-tech text-[10px] text-ivory/40">Assign carrier, AWB, dispatch schedule, and tracking URL</p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/admin/orders/${selectedOrder.id}`}
+                      className="px-3 py-1.5 rounded-lg bg-soft-gold/20 hover:bg-soft-gold/30 text-soft-gold border border-soft-gold/40 text-xs font-sans font-semibold inline-flex items-center gap-1 shrink-0"
+                    >
+                      <span>Manage Shipping</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </Link>
                   </div>
                 )}
               </div>
