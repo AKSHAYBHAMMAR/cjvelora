@@ -1,0 +1,39 @@
+-- ==============================================================================
+-- CJVELORA — DATABASE MIGRATION: ADD 'out_for_delivery' TO order_status ENUM
+-- ==============================================================================
+-- Context:
+--   The CJVELORA storefront and admin console implement a 5-stage fulfillment
+--   lifecycle:
+--     pending -> processing -> shipped -> out_for_delivery -> delivered
+--
+--   When attempting to transition an order from 'shipped' to 'out_for_delivery'
+--   (e.g., order VEL-20260928-N72FEQ), PostgreSQL returns:
+--     invalid input value for enum order_status: "out_for_delivery"
+--
+-- Root Cause:
+--   The PostgreSQL custom enum type 'order_status' was originally defined with:
+--     ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')
+--   The previous shipping management migration (migration_shipping_management.sql)
+--   added columns to the orders table (shipping_provider, tracking number, etc.)
+--   but omitted the enum extension statement.
+--
+-- Safety & Invariants:
+--   1. Zero downtime / non-blocking: ALTER TYPE ... ADD VALUE is fast and additive.
+--   2. Safe & Idempotent: Uses IF NOT EXISTS to prevent errors on repeated execution.
+--   3. Ordering: Places 'out_for_delivery' naturally AFTER 'shipped' (before 'delivered').
+--   4. Preserves all existing enum values and order rows (no drops, no recreation).
+--   5. Preserves all existing shipping metadata and test order statuses.
+--
+-- Execution Note:
+--   In PostgreSQL, ALTER TYPE ... ADD VALUE cannot be executed inside a multi-statement
+--   transaction block or DO $$ block. It must be executed as a top-level statement.
+-- ==============================================================================
+
+-- 1. Safely add 'out_for_delivery' to the order_status enum type
+ALTER TYPE public.order_status ADD VALUE IF NOT EXISTS 'out_for_delivery' AFTER 'shipped';
+
+-- 2. Optional validation query (run in Supabase SQL editor to verify enum values)
+-- SELECT enumlabel, enumsortorder 
+-- FROM pg_enum 
+-- WHERE enumtypid = 'public.order_status'::regtype 
+-- ORDER BY enumsortorder;
