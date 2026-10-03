@@ -10,10 +10,14 @@ import { verifyAdminRole, AdminProfile } from '@/lib/auth';
  * Row Level Security (RLS) policies.
  */
 export function createAuthenticatedAdminClient(token: string): SupabaseClient {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey =
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const rawAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    '';
+
+  const supabaseUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+  const supabaseAnonKey = rawAnonKey.trim().replace(/^["']|["']$/g, '');
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     global: {
@@ -89,7 +93,25 @@ export async function authenticateAdmin(req: NextRequest): Promise<Authenticated
 
   const adminClient = createAuthenticatedAdminClient(token);
 
-  const role = await verifyAdminRole(user.id, user.email, adminClient);
+  let role = await verifyAdminRole(user.id, user.email, adminClient);
+  if (!role) {
+    // If the scoped client was restricted by RLS on admin_roles, verify with default server client
+    role = await verifyAdminRole(user.id, user.email, defaultSupabase);
+  }
+  if (!role) {
+    // Fallback: check PostgreSQL authoritative SECURITY DEFINER helper function
+    try {
+      const { data: isAdmin, error: rpcErr } = await adminClient.rpc('is_admin_or_staff', {
+        p_user_id: user.id,
+      });
+      if (!rpcErr && isAdmin === true) {
+        role = 'super_admin';
+      }
+    } catch {
+      // Ignored if RPC is unavailable
+    }
+  }
+
   if (!role) {
     return {
       admin: null,

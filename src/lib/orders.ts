@@ -201,9 +201,15 @@ export async function updateOrderStatus(params: {
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    let token = session?.access_token;
+    if (!token) {
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      token = refreshData.session?.access_token;
+    }
+
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const res = await fetch('/api/admin/orders/status', {
@@ -246,9 +252,15 @@ export async function updateOrderShipping(
 ): Promise<{ success: boolean; message?: string; error?: string; order?: any }> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    let token = session?.access_token;
+    if (!token) {
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      token = refreshData.session?.access_token;
+    }
+
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const res = await fetch('/api/admin/orders/shipping', {

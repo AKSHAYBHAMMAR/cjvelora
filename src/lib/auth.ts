@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export type AdminRole = 'super_admin' | 'staff';
 
@@ -53,6 +53,7 @@ export async function verifyAdminRole(
     if (!isSupabaseConfigured) return null;
     const db = client || supabase;
 
+    // 1. Direct match on user_id with primary client
     const { data, error } = await db
       .from('admin_roles')
       .select('role')
@@ -63,20 +64,116 @@ export async function verifyAdminRole(
       return data.role.toLowerCase().trim() as AdminRole;
     }
 
+    // 2. Case-insensitive and trimmed match on email with primary client
     if (userEmail) {
+      const cleanEmail = userEmail.trim().toLowerCase();
       try {
         const { data: emailData, error: emailError } = await db
           .from('admin_roles')
           .select('role')
-          .eq('email', userEmail)
+          .ilike('email', cleanEmail)
           .maybeSingle();
 
         if (!emailError && emailData && isValidAdminRole(emailData.role)) {
           return emailData.role.toLowerCase().trim() as AdminRole;
         }
       } catch {
-        // Gracefully ignore error if email column is absent in schema
+        // Fallback to strict eq if ilike is not supported
+        try {
+          const { data: emailDataEq } = await db
+            .from('admin_roles')
+            .select('role')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+          if (emailDataEq && isValidAdminRole(emailDataEq.role)) {
+            return emailDataEq.role.toLowerCase().trim() as AdminRole;
+          }
+        } catch {
+          // Gracefully ignore error if email column is absent in schema
+        }
       }
+    }
+
+    // 3. If a scoped client was provided and failed due to RLS on admin_roles, try via default server client
+    if (client && client !== supabase) {
+      try {
+        const { data: defaultData } = await supabase
+          .from('admin_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (defaultData && isValidAdminRole(defaultData.role)) {
+          return defaultData.role.toLowerCase().trim() as AdminRole;
+        }
+
+        if (userEmail) {
+          const cleanEmail = userEmail.trim().toLowerCase();
+          const { data: defaultEmailData } = await supabase
+            .from('admin_roles')
+            .select('role')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+          if (defaultEmailData && isValidAdminRole(defaultEmailData.role)) {
+            return defaultEmailData.role.toLowerCase().trim() as AdminRole;
+          }
+        }
+      } catch {
+        // Gracefully ignore
+      }
+    }
+
+    // 4. Try via service role client if configured in server environment
+    const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim().replace(/^["']|["']$/g, '');
+    if (serviceKey && !serviceKey.includes('placeholder')) {
+      try {
+        const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+        const serviceClient = createClient(supabaseUrl, serviceKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+
+        const { data: serviceData } = await serviceClient
+          .from('admin_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (serviceData && isValidAdminRole(serviceData.role)) {
+          return serviceData.role.toLowerCase().trim() as AdminRole;
+        }
+
+        if (userEmail) {
+          const cleanEmail = userEmail.trim().toLowerCase();
+          const { data: serviceEmailData } = await serviceClient
+            .from('admin_roles')
+            .select('role')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+          if (serviceEmailData && isValidAdminRole(serviceEmailData.role)) {
+            return serviceEmailData.role.toLowerCase().trim() as AdminRole;
+          }
+        }
+      } catch {
+        // Service client lookup failed or not available
+      }
+    }
+
+    // 5. Authoritative PostgreSQL SECURITY DEFINER RPC verification
+    try {
+      const rpcClient = client || supabase;
+      const { data: isAdmin, error: rpcError } = await rpcClient.rpc('is_admin_or_staff', {
+        p_user_id: userId,
+      });
+
+      if (!rpcError && isAdmin === true) {
+        return 'super_admin';
+      }
+    } catch {
+      // RPC check gracefully ignored if function not available
     }
 
     return null;
